@@ -20,6 +20,7 @@ import (
 	"github.com/shdvr/vpn-backend/internal/provisioner"
 	"github.com/shdvr/vpn-backend/internal/subscription"
 	"github.com/shdvr/vpn-backend/internal/web"
+	"github.com/shdvr/vpn-backend/web/templates"
 
 	"strconv"
 	"strings"
@@ -113,6 +114,8 @@ func requireEnv(key string) string {
 
 func main() {
 	cfg := loadConfig()
+
+	templates.YandexMetrikaID = getEnv("YANDEX_METRIKA_ID", "")
 
 	// Init structured logger. Bridge stdlib log → slog so existing log.Printf
 	// calls also surface as structured records.

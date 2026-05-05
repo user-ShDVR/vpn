@@ -10,6 +10,8 @@ type PurchaseData struct {
 	Plans          []db.Plan
 	BalanceKopecks int64
 	ErrMsg         string
+	CurrentPlan    *db.Plan
+	CurrentSub     *db.Subscription
 }
 
 templ Purchase(d PurchaseData) {
@@ -19,10 +21,21 @@ templ Purchase(d PurchaseData) {
 				<a href="/subscriptions" class="flex h-10 w-10 items-center justify-center rounded-xl border border-dark-700 bg-dark-800">
 					<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"></path></svg>
 				</a>
-				<h1 class="text-2xl font-bold text-dark-50 sm:text-3xl">Оформить подписку</h1>
+				<h1 class="text-2xl font-bold text-dark-50 sm:text-3xl">
+					if d.CurrentPlan != nil {
+						Сменить тариф
+					} else {
+						Оформить подписку
+					}
+				</h1>
 			</div>
 			if d.ErrMsg != "" {
 				<div class="rounded-2xl border border-error-500/30 bg-error-500/10 p-3 text-sm text-error-400">{ d.ErrMsg }</div>
+			}
+			if d.CurrentPlan != nil && d.CurrentSub != nil {
+				<div class="rounded-2xl border border-warning-500/30 bg-warning-500/5 p-3 text-sm text-warning-400">
+					Активен тариф <b>{ d.CurrentPlan.Name }</b> до { d.CurrentSub.ExpiresAt.Format("02.01.2006") }. Покупка другого заменит текущий — остаток не возвращается.
+				</div>
 			}
 			<div class="glass rounded-2xl p-4 flex items-center justify-between">
 				<div>
@@ -33,18 +46,22 @@ templ Purchase(d PurchaseData) {
 			</div>
 			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 				for _, p := range d.Plans {
-					@PlanCard(p, d.BalanceKopecks)
+					@PlanCard(p, d.BalanceKopecks, d.CurrentPlan)
 				}
 			</div>
 		</div>
 	}
 }
 
-templ PlanCard(p db.Plan, balance int64) {
-	<div class="glass rounded-2xl p-5">
+templ PlanCard(p db.Plan, balance int64, current *db.Plan) {
+	<div class={ "glass rounded-2xl p-5", planCardBorder(p, current) }>
 		<div class="flex items-start justify-between gap-3">
 			<h3 class="text-lg font-semibold text-dark-100">{ p.Name }</h3>
-			<span class="badge-accent normal-case tracking-normal">{ fmt.Sprintf("%d дн.", p.DurationDays) }</span>
+			if current != nil && current.ID == p.ID {
+				<span class="badge-success normal-case tracking-normal">Текущий</span>
+			} else {
+				<span class="badge-accent normal-case tracking-normal">{ fmt.Sprintf("%d дн.", p.DurationDays) }</span>
+			}
 		</div>
 		if p.Description != "" {
 			<p class="mt-2 whitespace-pre-line text-sm text-dark-400">{ p.Description }</p>
@@ -53,18 +70,44 @@ templ PlanCard(p db.Plan, balance int64) {
 			<span>{ trafficLabel(p.TrafficLimitGB) }</span>
 			<span>· { fmt.Sprintf("%d устр.", p.MaxDevices) }</span>
 		</div>
-		<form method="post" action={ templ.SafeURL("/subscription/purchase/" + p.ID.String()) } class="mt-4 space-y-3 border-t border-dark-700/50 pt-4">
+		<form method="post" action={ templ.SafeURL("/subscription/purchase/" + p.ID.String()) } class="mt-4 space-y-3 border-t border-dark-700/50 pt-4" onsubmit={ confirmReplace(current, p) }>
 			<input class="input-field" type="text" name="promo_code" placeholder="Промокод (необязательно)"/>
 			<div class="flex items-center justify-between">
 				<div class="text-lg font-bold text-accent-400 mono">{ FormatRubles(p.CostKopecks) }</div>
 				if balance >= p.CostKopecks {
-					<button class="btn-primary text-sm" type="submit">Купить</button>
+					<button class="btn-primary text-sm" type="submit">{ buyButtonLabel(p, current) }</button>
 				} else {
 					<button class="btn-secondary text-sm opacity-50" type="submit" disabled>Не хватает средств</button>
 				}
 			</div>
 		</form>
 	</div>
+}
+
+func planCardBorder(p db.Plan, current *db.Plan) string {
+	if current != nil && current.ID == p.ID {
+		return "border-success-500/30"
+	}
+	return ""
+}
+
+func buyButtonLabel(p db.Plan, current *db.Plan) string {
+	if current == nil {
+		return "Купить"
+	}
+	if current.ID == p.ID {
+		return "Продлить"
+	}
+	return "Сменить"
+}
+
+func confirmReplace(current *db.Plan, p db.Plan) templ.ComponentScript {
+	if current == nil || current.ID == p.ID {
+		return templ.ComponentScript{}
+	}
+	return templ.ComponentScript{
+		Call: "return confirm('Заменить активный тариф на \"" + p.Name + "\"? Остаток дней не возвращается.')",
+	}
 }
 
 func trafficLabel(gb *int) string {

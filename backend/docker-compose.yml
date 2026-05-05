@@ -8,19 +8,21 @@ services:
       - "443:443/udp"
     environment:
       DOMAIN: ${DOMAIN:-localhost}
+      ACME_EMAIL: ${ACME_EMAIL:-admin@svyazok.ru}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
       - api
-    profiles: ["prod"]
 
   api:
     build: .
     restart: unless-stopped
+    expose:
+      - "8080"
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
       interval: 15s
@@ -38,6 +40,18 @@ services:
       PALLY_TOKEN: ${PALLY_TOKEN:-}
       PALLY_SHOP_ID: ${PALLY_SHOP_ID:-}
       PALLY_BASE_URL: ${PALLY_BASE_URL:-}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-noreply@svyazok.ru}
+      SMTP_TLS_MODE: ${SMTP_TLS_MODE:-starttls}
+      SUPPORT_TG_URL: ${SUPPORT_TG_URL:-}
+      SUPPORT_EMAIL: ${SUPPORT_EMAIL:-}
+      SUPPORT_FAQ_URL: ${SUPPORT_FAQ_URL:-}
+      REQUIRE_EMAIL_VERIFY: ${REQUIRE_EMAIL_VERIFY:-false}
+      YANDEX_METRIKA_ID: ${YANDEX_METRIKA_ID:-}
     depends_on:
       db:
         condition: service_healthy

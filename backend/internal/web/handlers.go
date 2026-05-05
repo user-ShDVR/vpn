@@ -16,7 +16,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/shdvr/vpn-backend/internal/auth"
+	"github.com/shdvr/vpn-backend/internal/captcha"
 	"github.com/shdvr/vpn-backend/internal/db"
+	"github.com/shdvr/vpn-backend/internal/disposable"
 	"github.com/shdvr/vpn-backend/internal/email"
 	"github.com/shdvr/vpn-backend/internal/payment/pally"
 	"github.com/shdvr/vpn-backend/internal/provisioner"
@@ -88,6 +90,18 @@ func (h *Handler) Register(app *fiber.App) {
 	app.Post("/reset", h.resetSubmit)
 
 	g := app.Group("/", h.cookieAuth)
+
+	// Admin web cabinet (cookie-auth + admin role).
+	a := g.Group("/admin", h.requireAdmin)
+	a.Get("/", h.adminStatsPage)
+	a.Get("/users", h.adminUsersPage)
+	a.Get("/users/:id", h.adminUserDetailPage)
+	a.Post("/users/:id/topup", h.adminUserTopupSubmit)
+	a.Post("/users/:id/grant", h.adminUserGrantSubmit)
+	a.Get("/servers", h.adminServersPage)
+	a.Post("/servers", h.adminServerCreate)
+	a.Post("/servers/:id/toggle", h.adminServerToggle)
+
 	g.Post("/verify-email/resend", h.resendVerifyEmail)
 	g.Get("/dashboard", h.dashboardPage)
 	g.Get("/subscriptions", h.subscriptionsPage)
@@ -237,24 +251,47 @@ func (h *Handler) loginSubmit(c *fiber.Ctx) error {
 	return c.Redirect("/dashboard", fiber.StatusFound)
 }
 
+func (h *Handler) renderRegister(c *fiber.Ctx, errMsg, refCode string) error {
+	chal, err := captcha.New(h.jwtSecret)
+	if err != nil {
+		return fiber.ErrInternalServerError
+	}
+	return render(c, templates.Register(templates.RegisterData{
+		ErrMsg: errMsg, RefCode: refCode,
+		CaptchaQuestion: chal.Question, CaptchaToken: chal.Token,
+	}))
+}
+
 func (h *Handler) registerPage(c *fiber.Ctx) error {
 	if h.hasAuthCookie(c) {
 		return c.Redirect("/dashboard", fiber.StatusFound)
 	}
-	refCode := c.Query("ref")
-	return render(c, templates.Register("", refCode))
+	return h.renderRegister(c, "", c.Query("ref"))
 }
 
 func (h *Handler) registerSubmit(c *fiber.Ctx) error {
 	email := c.FormValue("email")
 	password := c.FormValue("password")
 	refCode := c.FormValue("referral_code")
+	captchaToken := c.FormValue("captcha_token")
+	captchaAnswer := c.FormValue("captcha_answer")
+
+	if err := captcha.Verify(h.jwtSecret, captchaToken, captchaAnswer); err != nil {
+		msg := "Неверный ответ на проверку"
+		if errors.Is(err, captcha.ErrCaptchaExpired) {
+			msg = "Проверка истекла, попробуйте ещё раз"
+		}
+		return h.renderRegister(c, msg, refCode)
+	}
 
 	if _, err := mail.ParseAddress(email); err != nil {
-		return render(c, templates.Register("Неверный формат email", refCode))
+		return h.renderRegister(c, "Неверный формат email", refCode)
+	}
+	if disposable.IsDisposable(email) {
+		return h.renderRegister(c, "Используйте постоянный email-адрес", refCode)
 	}
 	if len(password) < 8 {
-		return render(c, templates.Register("Пароль минимум 8 символов", refCode))
+		return h.renderRegister(c, "Пароль минимум 8 символов", refCode)
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -263,7 +300,7 @@ func (h *Handler) registerSubmit(c *fiber.Ctx) error {
 	}
 	user, err := h.db.CreateUser(c.Context(), email, string(hash))
 	if err != nil {
-		return render(c, templates.Register("Email уже зарегистрирован", refCode))
+		return h.renderRegister(c, "Email уже зарегистрирован", refCode)
 	}
 
 	if refCode != "" {
@@ -499,8 +536,10 @@ func (h *Handler) renderPurchase(c *fiber.Ctx, errMsg string) error {
 	if err != nil {
 		return fiber.ErrInternalServerError
 	}
+	currentSub, currentPlan := h.activeSubAndPlan(c.Context(), userID)
 	return render(c, templates.Purchase(templates.PurchaseData{
 		Plans: plans, BalanceKopecks: user.BalanceKopecks, ErrMsg: errMsg,
+		CurrentPlan: currentPlan, CurrentSub: currentSub,
 	}))
 }
 

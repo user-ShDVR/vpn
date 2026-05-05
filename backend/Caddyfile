@@ -1,11 +1,17 @@
-# Caddy auto-TLS via Let's Encrypt. Set DOMAIN env in docker-compose.
-# Caddy negotiates the cert on first request and renews automatically.
+# Caddy auto-TLS via Let's Encrypt. Set DOMAIN+ACME_EMAIL in .env.
+# DOMAIN can be a single host (svyazok.ru) or comma-list ("svyazok.ru, www.svyazok.ru").
+
+{
+    email {$ACME_EMAIL}
+}
+
+www.{$DOMAIN} {
+    redir https://{$DOMAIN}{uri} permanent
+}
 
 {$DOMAIN} {
-    # Redirect to HTTPS happens automatically when DOMAIN includes no scheme.
     encode zstd gzip
 
-    # Security headers — CSP intentionally permissive for inline htmx attrs.
     header {
         X-Content-Type-Options    "nosniff"
         X-Frame-Options           "DENY"
@@ -15,23 +21,7 @@
         -Server
     }
 
-    # Static assets directly from the filesystem if mounted, else proxy.
-    @static path /static/*
-    handle @static {
-        reverse_proxy api:8080
-    }
-
-    # Subscription endpoint — high traffic, long cache OK on edge but sub
-    # content varies per token, so just pass through.
-    @sub path /sub/*
-    handle @sub {
-        reverse_proxy api:8080
-    }
-
-    # Everything else
-    handle {
-        reverse_proxy api:8080 {
-            header_up X-Real-IP {remote_host}
-        }
+    reverse_proxy api:8080 {
+        header_up X-Real-IP {remote_host}
     }
 }

@@ -20,6 +20,9 @@ templ Profile(d ProfileData) {
 					<div class="text-xs uppercase tracking-wider text-dark-400">Роль</div>
 					<div class="mt-1 text-base text-dark-100">{ d.Role }</div>
 				</div>
+				if d.Role == "admin" {
+					<a href="/admin" class="btn-primary w-full text-center">Админка</a>
+				}
 			</div>
 			<div class="glass rounded-3xl p-7">
 				<h2 class="mb-4 text-sm font-semibold uppercase tracking-wider text-dark-400">Сменить пароль</h2>

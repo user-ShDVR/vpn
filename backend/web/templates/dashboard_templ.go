@@ -98,7 +98,7 @@ func Dashboard(d DashboardData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div class=\"grid grid-cols-2 gap-2.5\"><a href=\"/balance\" class=\"glass rounded-2xl p-5 transition hover:border-accent-400/30\"><div class=\"mb-3 flex items-center justify-between\"><div class=\"flex items-center gap-2\"><div class=\"flex h-7 w-7 items-center justify-center rounded-lg bg-accent-500/10 text-accent-400\"><svg class=\"h-4 w-4\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"2\" y=\"6\" width=\"20\" height=\"14\" rx=\"2\"></rect><path d=\"M2 10h20\"></path></svg></div><span class=\"text-[13px] font-medium text-dark-50/45\">Баланс</span></div><svg class=\"h-4 w-4 text-dark-500\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M9 18l6-6-6-6\"></path></svg></div><div class=\"text-[28px] font-bold leading-tight text-accent-400 mono\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div class=\"grid grid-cols-2 gap-2.5\"><a href=\"/balance\" class=\"glass rounded-2xl p-5 transition hover:border-accent-400/30\"><div class=\"mb-3 flex items-center justify-between\"><div class=\"flex items-center gap-2\"><div class=\"flex h-7 w-7 items-center justify-center rounded-lg bg-accent-500/10 text-accent-400\"><svg class=\"h-4 w-4\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" stroke-width=\"1.8\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z\"></path></svg></div><span class=\"text-[13px] font-medium text-dark-50/45\">Баланс</span></div><svg class=\"h-4 w-4 text-dark-500\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M9 18l6-6-6-6\"></path></svg></div><div class=\"text-[28px] font-bold leading-tight text-accent-400 mono\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -199,7 +199,7 @@ func SubStatusCard(sub *db.Subscription, plan *db.Plan) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</div></div></div><a href=\"/subscriptions\" class=\"btn-primary w-full\">Подключить устройство</a></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</div></div></div><div class=\"grid grid-cols-2 gap-2\"><a href=\"/subscriptions\" class=\"btn-primary text-sm\">Подключить</a> <a href=\"/subscription/purchase\" class=\"btn-secondary text-sm\">Сменить тариф</a></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
