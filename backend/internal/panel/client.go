@@ -296,8 +296,11 @@ func (c *Client) GetClientTraffic(ctx context.Context, email string) (*Traffic, 
 
 // GetClientIPs returns the IPs currently associated with a client by xray email.
 // 3x-ui v2 exposes this via POST /panel/api/inbounds/clientIps/:email — returns
-// JSON where `obj` is either "ip1\nip2" or sentinel "No IP Record". Older 3x-ui
-// builds use /panel/inbound/clientIps/:email — try both for compatibility.
+// JSON where `obj` is either:
+//   - sentinel string "No IP Record"
+//   - newline-separated string "ip1\nip2" (older 3x-ui)
+//   - array of "ip (timestamp)" strings (newer 3x-ui)
+// Older builds use /panel/inbound/clientIps/:email — try both for compatibility.
 func (c *Client) GetClientIPs(ctx context.Context, email string) ([]string, error) {
 	paths := []string{
 		fmt.Sprintf("/panel/api/inbounds/clientIps/%s", email),
@@ -310,33 +313,53 @@ func (c *Client) GetClientIPs(ctx context.Context, email string) ([]string, erro
 			lastErr = err
 			continue
 		}
-		var result struct {
-			Success bool   `json:"success"`
-			Msg     string `json:"msg"`
-			Obj     string `json:"obj"`
+		var probe struct {
+			Success bool            `json:"success"`
+			Msg     string          `json:"msg"`
+			Obj     json.RawMessage `json:"obj"`
 		}
-		if err := json.Unmarshal(data, &result); err != nil {
-			// HTML/404 page from wrong path — try next.
+		if err := json.Unmarshal(data, &probe); err != nil {
 			lastErr = fmt.Errorf("decode clientIps response from %s: %w", p, err)
 			continue
 		}
-		if !result.Success {
-			lastErr = fmt.Errorf("clientIps from %s not success: %s", p, result.Msg)
+		if !probe.Success {
+			lastErr = fmt.Errorf("clientIps from %s not success: %s", p, probe.Msg)
 			continue
 		}
-		if result.Obj == "" || result.Obj == "No IP Record" {
-			return nil, nil
+		// obj can be a JSON string OR a JSON array
+		var asArr []string
+		if err := json.Unmarshal(probe.Obj, &asArr); err == nil {
+			return cleanIPs(asArr), nil
 		}
-		var ips []string
-		for _, line := range strings.Split(result.Obj, "\n") {
-			line = strings.TrimSpace(line)
-			if line != "" {
-				ips = append(ips, line)
+		var asStr string
+		if err := json.Unmarshal(probe.Obj, &asStr); err == nil {
+			if asStr == "" || asStr == "No IP Record" {
+				return nil, nil
 			}
+			return cleanIPs(strings.Split(asStr, "\n")), nil
 		}
-		return ips, nil
+		lastErr = fmt.Errorf("clientIps from %s: unknown obj shape: %s", p, string(probe.Obj))
 	}
 	return nil, lastErr
+}
+
+// cleanIPs strips trailing " (timestamp)" suffixes and empties.
+func cleanIPs(raw []string) []string {
+	out := make([]string, 0, len(raw))
+	for _, s := range raw {
+		s = strings.TrimSpace(s)
+		if s == "" {
+			continue
+		}
+		if i := strings.Index(s, " ("); i > 0 {
+			s = s[:i]
+		}
+		out = append(out, s)
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }
 
 // GetOnlineEmails returns the list of xray-emails currently connected across
