@@ -163,7 +163,7 @@ func (h *Handler) authRegister(c *fiber.Ctx) error {
 		}
 	}
 
-	token, err := auth.GenerateToken(user.ID, user.Role, h.jwtSecret)
+	token, err := auth.GenerateToken(user.ID, h.jwtSecret)
 	if err != nil {
 		return fiber.ErrInternalServerError
 	}
@@ -186,7 +186,7 @@ func (h *Handler) authLogin(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusUnauthorized, "invalid credentials")
 	}
 
-	token, err := auth.GenerateToken(user.ID, user.Role, h.jwtSecret)
+	token, err := auth.GenerateToken(user.ID, h.jwtSecret)
 	if err != nil {
 		return fiber.ErrInternalServerError
 	}
@@ -1165,8 +1165,13 @@ func (h *Handler) jwtMiddleware(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusUnauthorized, "invalid token")
 	}
 
+	user, err := h.db.GetUserByID(c.Context(), claims.UserID)
+	if err != nil {
+		return fiber.NewError(fiber.StatusUnauthorized, "user not found")
+	}
+
 	c.Locals("userID", claims.UserID)
-	c.Locals("role", claims.Role)
+	c.Locals("role", user.Role)
 	return c.Next()
 }
 

@@ -3,6 +3,7 @@ package provisioner
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"sync"
 	"time"
@@ -228,9 +229,13 @@ func (s *Service) GetOnlineDevices(ctx context.Context, userID uuid.UUID) (map[s
 		}
 		pc := s.panelFor(srv)
 		if err := pc.Login(ctx); err != nil {
+			log.Printf("[devices] login %s failed: %v", srv.Name, err)
 			continue
 		}
-		ips, _ := pc.GetClientIPs(ctx, sc.XrayEmail)
+		ips, err := pc.GetClientIPs(ctx, sc.XrayEmail)
+		if err != nil {
+			log.Printf("[devices] %s ips for %s err: %v", srv.Name, sc.XrayEmail, err)
+		}
 		out[sc.ServerName] = ips
 	}
 	return out, nil

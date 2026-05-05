@@ -207,8 +207,13 @@ func (h *Handler) cookieAuth(c *fiber.Ctx) error {
 		h.clearAuthCookie(c)
 		return c.Redirect("/login", fiber.StatusFound)
 	}
+	user, err := h.db.GetUserByID(c.Context(), claims.UserID)
+	if err != nil {
+		h.clearAuthCookie(c)
+		return c.Redirect("/login", fiber.StatusFound)
+	}
 	c.Locals("userID", claims.UserID)
-	c.Locals("role", claims.Role)
+	c.Locals("role", user.Role)
 	return c.Next()
 }
 
@@ -243,7 +248,7 @@ func (h *Handler) loginSubmit(c *fiber.Ctx) error {
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
 		return render(c, templates.Login("Неверный email или пароль"))
 	}
-	token, err := auth.GenerateToken(user.ID, user.Role, h.jwtSecret)
+	token, err := auth.GenerateToken(user.ID, h.jwtSecret)
 	if err != nil {
 		return fiber.ErrInternalServerError
 	}
@@ -321,7 +326,7 @@ func (h *Handler) registerSubmit(c *fiber.Ctx) error {
 		log.Printf("free plan activation failed for %s: %v", user.Email, err)
 	}
 
-	token, err := auth.GenerateToken(user.ID, user.Role, h.jwtSecret)
+	token, err := auth.GenerateToken(user.ID, h.jwtSecret)
 	if err != nil {
 		return fiber.ErrInternalServerError
 	}
@@ -432,7 +437,7 @@ func (h *Handler) resetSubmit(c *fiber.Ctx) error {
 	}
 	_ = h.db.ClearPasswordResetToken(c.Context(), user.ID)
 
-	jwtTok, err := auth.GenerateToken(user.ID, user.Role, h.jwtSecret)
+	jwtTok, err := auth.GenerateToken(user.ID, h.jwtSecret)
 	if err != nil {
 		return fiber.ErrInternalServerError
 	}

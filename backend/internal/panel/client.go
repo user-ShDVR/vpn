@@ -295,35 +295,48 @@ func (c *Client) GetClientTraffic(ctx context.Context, email string) (*Traffic, 
 }
 
 // GetClientIPs returns the IPs currently associated with a client by xray email.
-// 3x-ui exposes this via POST /panel/inbound/clientIps/:email — returns a JSON
-// payload where `obj` is either a stringified list ("ip1\nip2") or a sentinel
-// "No IP Record". We normalize to []string.
+// 3x-ui v2 exposes this via POST /panel/api/inbounds/clientIps/:email — returns
+// JSON where `obj` is either "ip1\nip2" or sentinel "No IP Record". Older 3x-ui
+// builds use /panel/inbound/clientIps/:email — try both for compatibility.
 func (c *Client) GetClientIPs(ctx context.Context, email string) ([]string, error) {
-	data, err := c.doJSON(ctx, "POST",
+	paths := []string{
+		fmt.Sprintf("/panel/api/inbounds/clientIps/%s", email),
 		fmt.Sprintf("/panel/inbound/clientIps/%s", email),
-		nil,
-	)
-	if err != nil {
-		return nil, err
 	}
-	var result struct {
-		Success bool   `json:"success"`
-		Obj     string `json:"obj"`
-	}
-	if err := json.Unmarshal(data, &result); err != nil {
-		return nil, fmt.Errorf("decode clientIps response: %w", err)
-	}
-	if result.Obj == "" || result.Obj == "No IP Record" {
-		return nil, nil
-	}
-	var ips []string
-	for _, line := range strings.Split(result.Obj, "\n") {
-		line = strings.TrimSpace(line)
-		if line != "" {
-			ips = append(ips, line)
+	var lastErr error
+	for _, p := range paths {
+		data, err := c.doJSON(ctx, "POST", p, nil)
+		if err != nil {
+			lastErr = err
+			continue
 		}
+		var result struct {
+			Success bool   `json:"success"`
+			Msg     string `json:"msg"`
+			Obj     string `json:"obj"`
+		}
+		if err := json.Unmarshal(data, &result); err != nil {
+			// HTML/404 page from wrong path — try next.
+			lastErr = fmt.Errorf("decode clientIps response from %s: %w", p, err)
+			continue
+		}
+		if !result.Success {
+			lastErr = fmt.Errorf("clientIps from %s not success: %s", p, result.Msg)
+			continue
+		}
+		if result.Obj == "" || result.Obj == "No IP Record" {
+			return nil, nil
+		}
+		var ips []string
+		for _, line := range strings.Split(result.Obj, "\n") {
+			line = strings.TrimSpace(line)
+			if line != "" {
+				ips = append(ips, line)
+			}
+		}
+		return ips, nil
 	}
-	return ips, nil
+	return nil, lastErr
 }
 
 func (c *Client) GetInbound(ctx context.Context, id int) (*Inbound, error) {
