@@ -93,8 +93,10 @@ func (s *Sender) Send(ctx context.Context, to, templateName, subject string, dat
 	}
 	switch strings.ToLower(s.cfg.TLSMode) {
 	case "tls":
-		opts = append(opts, mail.WithSSLPort(false), mail.WithTLSPolicy(mail.TLSMandatory))
+		// Implicit TLS (port 465) — wrap socket in TLS from the start.
+		opts = append(opts, mail.WithSSL())
 	case "starttls":
+		// STARTTLS (port 587) — upgrade plain socket to TLS via SMTP command.
 		opts = append(opts, mail.WithTLSPolicy(mail.TLSMandatory))
 	case "none":
 		opts = append(opts, mail.WithTLSPolicy(mail.NoTLS))
