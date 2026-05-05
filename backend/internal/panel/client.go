@@ -339,6 +339,27 @@ func (c *Client) GetClientIPs(ctx context.Context, email string) ([]string, erro
 	return nil, lastErr
 }
 
+// GetOnlineEmails returns the list of xray-emails currently connected across
+// all inbounds on this panel. Works regardless of access-log config.
+func (c *Client) GetOnlineEmails(ctx context.Context) ([]string, error) {
+	data, err := c.doJSON(ctx, "POST", "/panel/api/inbounds/onlines", nil)
+	if err != nil {
+		return nil, err
+	}
+	var result struct {
+		Success bool     `json:"success"`
+		Msg     string   `json:"msg"`
+		Obj     []string `json:"obj"`
+	}
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil, fmt.Errorf("decode onlines response: %w", err)
+	}
+	if !result.Success {
+		return nil, fmt.Errorf("onlines not success: %s", result.Msg)
+	}
+	return result.Obj, nil
+}
+
 func (c *Client) GetInbound(ctx context.Context, id int) (*Inbound, error) {
 	data, err := c.doJSON(ctx, "GET",
 		fmt.Sprintf("/panel/api/inbounds/get/%d", id),

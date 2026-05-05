@@ -236,6 +236,21 @@ func (s *Service) GetOnlineDevices(ctx context.Context, userID uuid.UUID) (map[s
 		if err != nil {
 			log.Printf("[devices] %s ips for %s err: %v", srv.Name, sc.XrayEmail, err)
 		}
+		// Fallback: when xray access-log is off, clientIps returns empty.
+		// Use onlines endpoint to detect at least connection state.
+		if len(ips) == 0 {
+			emails, oerr := pc.GetOnlineEmails(ctx)
+			if oerr != nil {
+				log.Printf("[devices] %s onlines err: %v", srv.Name, oerr)
+			} else {
+				for _, e := range emails {
+					if e == sc.XrayEmail {
+						ips = []string{"online"}
+						break
+					}
+				}
+			}
+		}
 		out[sc.ServerName] = ips
 	}
 	return out, nil
