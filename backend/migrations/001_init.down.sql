@@ -1,0 +1,5 @@
+DROP TABLE IF EXISTS server_clients;
+DROP TABLE IF EXISTS subscriptions;
+DROP TABLE IF EXISTS servers;
+DROP TABLE IF EXISTS plans;
+DROP TABLE IF EXISTS users;

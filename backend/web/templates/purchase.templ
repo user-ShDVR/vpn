@@ -1,0 +1,75 @@
+package templates
+
+import (
+	"fmt"
+
+	"github.com/shdvr/vpn-backend/internal/db"
+)
+
+type PurchaseData struct {
+	Plans          []db.Plan
+	BalanceKopecks int64
+	ErrMsg         string
+}
+
+templ Purchase(d PurchaseData) {
+	@Layout("Тарифы", "/subscriptions", true) {
+		<div class="space-y-6">
+			<div class="flex items-center gap-3">
+				<a href="/subscriptions" class="flex h-10 w-10 items-center justify-center rounded-xl border border-dark-700 bg-dark-800">
+					<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"></path></svg>
+				</a>
+				<h1 class="text-2xl font-bold text-dark-50 sm:text-3xl">Оформить подписку</h1>
+			</div>
+			if d.ErrMsg != "" {
+				<div class="rounded-2xl border border-error-500/30 bg-error-500/10 p-3 text-sm text-error-400">{ d.ErrMsg }</div>
+			}
+			<div class="glass rounded-2xl p-4 flex items-center justify-between">
+				<div>
+					<div class="text-xs uppercase tracking-wider text-dark-400">Ваш баланс</div>
+					<div class="mt-1 text-xl font-bold text-accent-400 mono">{ FormatRubles(d.BalanceKopecks) }</div>
+				</div>
+				<a href="/balance" class="btn-secondary text-xs">Пополнить</a>
+			</div>
+			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+				for _, p := range d.Plans {
+					@PlanCard(p, d.BalanceKopecks)
+				}
+			</div>
+		</div>
+	}
+}
+
+templ PlanCard(p db.Plan, balance int64) {
+	<div class="glass rounded-2xl p-5">
+		<div class="flex items-start justify-between gap-3">
+			<h3 class="text-lg font-semibold text-dark-100">{ p.Name }</h3>
+			<span class="badge-accent normal-case tracking-normal">{ fmt.Sprintf("%d дн.", p.DurationDays) }</span>
+		</div>
+		if p.Description != "" {
+			<p class="mt-2 whitespace-pre-line text-sm text-dark-400">{ p.Description }</p>
+		}
+		<div class="mt-3 flex flex-wrap gap-3 text-sm text-dark-300">
+			<span>{ trafficLabel(p.TrafficLimitGB) }</span>
+			<span>· { fmt.Sprintf("%d устр.", p.MaxDevices) }</span>
+		</div>
+		<form method="post" action={ templ.SafeURL("/subscription/purchase/" + p.ID.String()) } class="mt-4 space-y-3 border-t border-dark-700/50 pt-4">
+			<input class="input-field" type="text" name="promo_code" placeholder="Промокод (необязательно)"/>
+			<div class="flex items-center justify-between">
+				<div class="text-lg font-bold text-accent-400 mono">{ FormatRubles(p.CostKopecks) }</div>
+				if balance >= p.CostKopecks {
+					<button class="btn-primary text-sm" type="submit">Купить</button>
+				} else {
+					<button class="btn-secondary text-sm opacity-50" type="submit" disabled>Не хватает средств</button>
+				}
+			</div>
+		</form>
+	</div>
+}
+
+func trafficLabel(gb *int) string {
+	if gb == nil {
+		return "♾️ Безлимит"
+	}
+	return fmt.Sprintf("%d ГБ", *gb)
+}

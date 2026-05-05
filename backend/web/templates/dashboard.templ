@@ -1,0 +1,123 @@
+package templates
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/shdvr/vpn-backend/internal/db"
+)
+
+type DashboardData struct {
+	UserEmail      string
+	BalanceKopecks int64
+	Subscription   *db.Subscription
+	Plan           *db.Plan
+	ReferralCount  int
+	EmailVerified  bool
+	JustVerified   bool
+	JustResent     bool
+}
+
+templ Dashboard(d DashboardData) {
+	@Layout("Главная", "/", true) {
+		<div class="space-y-6">
+			<div>
+				<h1 class="text-2xl font-bold text-dark-50 sm:text-3xl">Добро пожаловать!</h1>
+				<p class="mt-1 text-sm text-dark-400">{ d.UserEmail }</p>
+			</div>
+			if d.JustVerified {
+				<div class="rounded-2xl border border-success-500/30 bg-success-500/10 p-3 text-sm text-success-400">Email подтверждён ✓</div>
+			}
+			if d.JustResent {
+				<div class="rounded-2xl border border-success-500/30 bg-success-500/10 p-3 text-sm text-success-400">Письмо отправлено повторно</div>
+			}
+			if !d.EmailVerified && !d.JustVerified {
+				<div id="verify-banner" class="glass rounded-2xl p-4 flex items-center gap-3 border border-warning-500/30 bg-warning-500/5">
+					<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f8ba4f" stroke-width="2" class="flex-shrink-0"><path d="M12 9v3.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+					<div class="flex-1 text-sm text-dark-200">Email не подтверждён</div>
+					<button class="btn-secondary text-xs" hx-post="/verify-email/resend" hx-target="#verify-banner" hx-swap="outerHTML">Отправить ещё раз</button>
+				</div>
+			}
+			@SubStatusCard(d.Subscription, d.Plan)
+			<div class="grid grid-cols-2 gap-2.5">
+				<a href="/balance" class="glass rounded-2xl p-5 transition hover:border-accent-400/30">
+					<div class="mb-3 flex items-center justify-between">
+						<div class="flex items-center gap-2">
+							<div class="flex h-7 w-7 items-center justify-center rounded-lg bg-accent-500/10 text-accent-400">
+								<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="14" rx="2"></rect><path d="M2 10h20"></path></svg>
+							</div>
+							<span class="text-[13px] font-medium text-dark-50/45">Баланс</span>
+						</div>
+						<svg class="h-4 w-4 text-dark-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"></path></svg>
+					</div>
+					<div class="text-[28px] font-bold leading-tight text-accent-400 mono">{ FormatRubles(d.BalanceKopecks) }</div>
+				</a>
+				<a href="/referral" class="glass rounded-2xl p-5 transition hover:border-accent-400/30">
+					<div class="mb-3 flex items-center justify-between">
+						<div class="flex items-center gap-2">
+							<div class="flex h-7 w-7 items-center justify-center rounded-lg bg-white/5 text-dark-400">
+								<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+							</div>
+							<span class="text-[13px] font-medium text-dark-50/45">Рефералы</span>
+						</div>
+						<svg class="h-4 w-4 text-dark-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"></path></svg>
+					</div>
+					<div class="text-[28px] font-bold leading-tight text-dark-50 mono">{ fmt.Sprintf("%d", d.ReferralCount) }</div>
+				</a>
+			</div>
+		</div>
+	}
+}
+
+templ SubStatusCard(sub *db.Subscription, plan *db.Plan) {
+	if sub != nil && plan != nil {
+		<div class="glass-accent rounded-3xl p-7">
+			<div class="mb-5 flex items-center justify-between">
+				<div>
+					<div class="badge-success">Активна</div>
+					<h2 class="mt-2 text-lg font-bold text-dark-50">{ plan.Name }</h2>
+				</div>
+				<div class="text-right">
+					<div class="text-[10px] uppercase tracking-wider text-dark-50/40">Истекает</div>
+					<div class="mono text-base font-semibold text-dark-50">{ sub.ExpiresAt.Format("02.01.2006") }</div>
+					<div class="text-xs text-dark-400">{ daysLeftLabel(sub.ExpiresAt) }</div>
+				</div>
+			</div>
+			<a href="/subscriptions" class="btn-primary w-full">Подключить устройство</a>
+		</div>
+	} else {
+		<div class="glass rounded-3xl p-7" style="border-color: rgba(255,59,92,0.15);">
+			<div class="mb-5 flex items-center gap-3">
+				<div class="flex h-11 w-11 items-center justify-center rounded-2xl" style="background: rgba(255,59,92,0.1);">
+					<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF3B5C" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
+				</div>
+				<h2 class="text-lg font-bold text-dark-50">Нет активной подписки</h2>
+			</div>
+			<p class="mb-5 text-sm text-dark-400">Выберите тариф для доступа к VPN.</p>
+			<a href="/subscription/purchase" class="btn-primary w-full">Тарифы</a>
+		</div>
+	}
+}
+
+func daysLeftLabel(expiresAt time.Time) string {
+	d := int(time.Until(expiresAt).Hours() / 24)
+	if d <= 0 {
+		return "Истекла"
+	}
+	if d == 1 {
+		return "Остался 1 день"
+	}
+	return fmt.Sprintf("Осталось %d дн.", d)
+}
+
+func FormatRubles(kopecks int64) string {
+	rub := kopecks / 100
+	kop := kopecks % 100
+	if kop < 0 {
+		kop = -kop
+	}
+	if rub < 0 {
+		return fmt.Sprintf("%d.%02d ₽", rub, kop)
+	}
+	return fmt.Sprintf("%d.%02d ₽", rub, kop)
+}

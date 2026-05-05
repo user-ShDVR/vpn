@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS referrals;
+ALTER TABLE users DROP COLUMN IF EXISTS referral_code;

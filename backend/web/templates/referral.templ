@@ -1,0 +1,75 @@
+package templates
+
+import (
+	"fmt"
+
+	"github.com/shdvr/vpn-backend/internal/db"
+)
+
+type ReferralData struct {
+	Code      string
+	Link      string
+	Count     int
+	BonusDays int
+	List      []db.ReferralWithEmail
+}
+
+templ Referral(d ReferralData) {
+	@Layout("Рефералы", "/referral", true) {
+		<div class="space-y-6">
+			<h1 class="text-2xl font-bold text-dark-50 sm:text-3xl">Рефералы</h1>
+			<div class="glass rounded-3xl p-7 space-y-4">
+				<div>
+					<div class="text-xs uppercase tracking-wider text-dark-400">Ваш код</div>
+					<div class="mt-1 mono text-xl font-semibold text-accent-400">{ d.Code }</div>
+				</div>
+				<div>
+					<div class="text-xs uppercase tracking-wider text-dark-400">Реферальная ссылка</div>
+					<div class="mt-2 flex gap-2">
+						<code id="ref-link" class="flex-1 overflow-x-auto rounded-xl bg-white/5 px-3 py-2 text-[11px] mono text-dark-50/70 break-all">{ d.Link }</code>
+						<button onclick="navigator.clipboard.writeText(document.getElementById('ref-link').innerText); this.innerText='OK'; setTimeout(()=>this.innerText='Копировать',1500)" class="btn-icon">Копировать</button>
+					</div>
+				</div>
+			</div>
+			<div class="grid grid-cols-2 gap-3">
+				<div class="glass rounded-2xl p-5">
+					<div class="text-xs uppercase tracking-wider text-dark-400">Приглашено</div>
+					<div class="mt-2 text-3xl font-bold text-dark-50 mono">{ fmt.Sprintf("%d", d.Count) }</div>
+				</div>
+				<div class="glass rounded-2xl p-5">
+					<div class="text-xs uppercase tracking-wider text-dark-400">Бонус-дней</div>
+					<div class="mt-2 text-3xl font-bold text-success-400 mono">{ fmt.Sprintf("+%d", d.BonusDays) }</div>
+				</div>
+			</div>
+			<div>
+				<h2 class="mb-3 text-sm font-semibold uppercase tracking-wider text-dark-400">Приглашённые</h2>
+				if len(d.List) == 0 {
+					<div class="glass rounded-2xl p-5 text-center text-sm text-dark-500">Пока никого. Поделитесь ссылкой!</div>
+				} else {
+					<div class="space-y-2">
+						for _, r := range d.List {
+							<div class="glass rounded-xl p-3 flex items-center justify-between">
+								<div class="text-sm text-dark-100">{ maskEmail(r.Email) }</div>
+								<div class="text-xs text-dark-500 mono">{ r.CreatedAt.Format("02.01.2006") }</div>
+							</div>
+						}
+					</div>
+				}
+			</div>
+		</div>
+	}
+}
+
+func maskEmail(email string) string {
+	at := -1
+	for i, c := range email {
+		if c == '@' {
+			at = i
+			break
+		}
+	}
+	if at <= 1 {
+		return email
+	}
+	return string(email[0]) + "***" + email[at:]
+}
