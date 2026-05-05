@@ -386,13 +386,20 @@ func (h *Handler) forgotPage(c *fiber.Ctx) error {
 func (h *Handler) forgotSubmit(c *fiber.Ctx) error {
 	addr := c.FormValue("email")
 	user, err := h.db.GetUserByEmail(c.Context(), addr)
-	if err == nil && user != nil {
+	if err != nil || user == nil {
+		log.Printf("forgot: no user found for email=%q (err=%v)", addr, err)
+	} else {
 		tok, _ := db.RandomToken(32)
-		_ = h.db.SetPasswordResetToken(c.Context(), user.ID, tok, time.Now().Add(1*time.Hour))
+		if err := h.db.SetPasswordResetToken(c.Context(), user.ID, tok, time.Now().Add(1*time.Hour)); err != nil {
+			log.Printf("forgot: set reset token for %s failed: %v", user.Email, err)
+		}
 		link := h.publicBaseURL + "/reset?token=" + tok
-		_ = h.mailer.Send(c.Context(), user.Email, "reset", "Сброс пароля — СвязьOK", email.TemplateData{
+		log.Printf("forgot: reset link for %s: %s", user.Email, link)
+		if err := h.mailer.Send(c.Context(), user.Email, "reset", "Сброс пароля — СвязьOK", email.TemplateData{
 			UserEmail: user.Email, Link: link,
-		})
+		}); err != nil {
+			log.Printf("forgot: send email to %s failed: %v", user.Email, err)
+		}
 	}
 	// Always-200 to avoid email-existence leak.
 	return render(c, templates.Forgot("", true))
