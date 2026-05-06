@@ -128,6 +128,7 @@ type Plan struct {
 	TrafficLimitGB *int      `db:"traffic_limit_gb" json:"traffic_limit_gb"`
 	MaxDevices     int       `db:"max_devices" json:"max_devices"`
 	CostKopecks    int64     `db:"cost_kopecks" json:"cost_kopecks"`
+	ServerCount    int       `db:"server_count" json:"server_count"`
 	Description    string    `db:"description" json:"description"`
 	CreatedAt      time.Time `db:"created_at" json:"created_at"`
 }

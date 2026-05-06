@@ -195,7 +195,7 @@ func Register(d RegisterData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\"></div><button class=\"btn-primary w-full\" type=\"submit\">Создать аккаунт</button></form><p class=\"text-center text-sm text-dark-400\">Уже есть аккаунт? <a href=\"/login\" class=\"text-accent-400 hover:underline\">Войти</a></p></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\"></div><label class=\"flex items-start gap-2 text-xs text-dark-400\"><input type=\"checkbox\" name=\"accept_terms\" value=\"1\" required class=\"mt-0.5\"> <span>Я принимаю <a href=\"/terms\" target=\"_blank\" class=\"text-accent-400 underline\">пользовательское соглашение</a> и <a href=\"/privacy\" target=\"_blank\" class=\"text-accent-400 underline\">политику конфиденциальности</a></span></label> <button class=\"btn-primary w-full\" type=\"submit\">Создать аккаунт</button></form><p class=\"text-center text-sm text-dark-400\">Уже есть аккаунт? <a href=\"/login\" class=\"text-accent-400 hover:underline\">Войти</a></p></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

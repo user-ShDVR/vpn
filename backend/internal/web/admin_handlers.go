@@ -1,6 +1,7 @@
 package web
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -23,8 +24,13 @@ func (h *Handler) adminStatsPage(c *fiber.Ctx) error {
 	users, _ := h.db.CountUsers(c.Context())
 	subs, _ := h.db.CountActiveSubscriptions(c.Context())
 	servers, _ := h.db.CountServers(c.Context())
+	syncMsg := ""
+	if s := c.Query("synced"); s != "" {
+		syncMsg = fmt.Sprintf("Синхронизировано: %s, ошибок: %s", s, c.Query("failed", "0"))
+	}
 	return render(c, templates.AdminStats(templates.AdminStatsData{
 		Users: users, ActiveSubscriptions: subs, ActiveServers: servers,
+		SyncMsg: syncMsg,
 	}))
 }
 
@@ -176,6 +182,34 @@ func (h *Handler) adminServerCreate(c *fiber.Ctx) error {
 		_ = h.db.UpdateServer(c.Context(), created.ID, nil, &maxClients)
 	}
 	return h.renderServers(c, "Сервер "+created.Name+" добавлен", "")
+}
+
+// adminSyncExpiries pushes current DB sub.expires_at to every xray client of
+// every active subscription. Run once after migration 015 so migrated Free
+// users actually keep their VPN access for the new 30-day period.
+func (h *Handler) adminSyncExpiries(c *fiber.Ctx) error {
+	rows, err := h.db.QueryxContext(c.Context(), `
+		SELECT DISTINCT user_id FROM subscriptions WHERE is_active = TRUE AND expires_at > NOW()
+	`)
+	if err != nil {
+		return fiber.ErrInternalServerError
+	}
+	defer rows.Close()
+
+	synced := 0
+	failed := 0
+	for rows.Next() {
+		var uid uuid.UUID
+		if err := rows.Scan(&uid); err != nil {
+			continue
+		}
+		if err := h.provisioner.ExtendUserSubscription(c.Context(), uid, 0); err != nil {
+			failed++
+		} else {
+			synced++
+		}
+	}
+	return c.Redirect(fmt.Sprintf("/admin?synced=%d&failed=%d", synced, failed), fiber.StatusFound)
 }
 
 func (h *Handler) adminServerToggle(c *fiber.Ctx) error {

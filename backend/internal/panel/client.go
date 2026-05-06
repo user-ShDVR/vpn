@@ -217,6 +217,34 @@ func (c *Client) AddClient(ctx context.Context, inboundID int, client XrayClient
 	return nil
 }
 
+// UpdateClient overwrites a single client's full record on the inbound. The
+// uuid in the URL path identifies the existing client; the form-body holds the
+// new settings (XrayClient with same uuid, updated fields).
+func (c *Client) UpdateClient(ctx context.Context, inboundID int, clientUUID string, client XrayClient) error {
+	settingsJSON, _ := json.Marshal(map[string]any{
+		"clients": []XrayClient{client},
+	})
+	form := url.Values{}
+	form.Set("id", fmt.Sprintf("%d", inboundID))
+	form.Set("settings", string(settingsJSON))
+
+	data, err := c.doForm(ctx, fmt.Sprintf("/panel/api/inbounds/updateClient/%s", clientUUID), form)
+	if err != nil {
+		return err
+	}
+	var result struct {
+		Success bool   `json:"success"`
+		Msg     string `json:"msg"`
+	}
+	if err := json.Unmarshal(data, &result); err != nil {
+		return fmt.Errorf("decode updateClient response: %w", err)
+	}
+	if !result.Success {
+		return fmt.Errorf("updateClient failed: %s", result.Msg)
+	}
+	return nil
+}
+
 // RestartXray restarts the xray service on the panel so config changes take effect.
 func (c *Client) RestartXray(ctx context.Context) {
 	data, err := c.doJSON(ctx, "POST", "/panel/api/xray/restart", nil)

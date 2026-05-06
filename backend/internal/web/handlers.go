@@ -28,7 +28,7 @@ import (
 )
 
 const cookieName = "auth_token"
-const referralBonusDays = 5
+const referralBonusDays = 3
 
 type Config struct {
 	DB                 *db.DB
@@ -89,6 +89,10 @@ func (h *Handler) Register(app *fiber.App) {
 	app.Get("/reset", h.resetPage)
 	app.Post("/reset", h.resetSubmit)
 
+	// Legal (public)
+	app.Get("/privacy", h.privacyPage)
+	app.Get("/terms", h.termsPage)
+
 	g := app.Group("/", h.cookieAuth)
 
 	// Admin web cabinet (cookie-auth + admin role).
@@ -101,6 +105,7 @@ func (h *Handler) Register(app *fiber.App) {
 	a.Get("/servers", h.adminServersPage)
 	a.Post("/servers", h.adminServerCreate)
 	a.Post("/servers/:id/toggle", h.adminServerToggle)
+	a.Post("/sync-expiries", h.adminSyncExpiries)
 
 	g.Post("/verify-email/resend", h.resendVerifyEmail)
 	g.Get("/dashboard", h.dashboardPage)
@@ -116,6 +121,18 @@ func (h *Handler) Register(app *fiber.App) {
 	g.Get("/referral", h.referralPage)
 	g.Get("/support", h.supportPage)
 	g.Get("/info", h.infoPage)
+}
+
+func (h *Handler) privacyPage(c *fiber.Ctx) error {
+	return render(c, templates.Privacy(templates.LegalData{
+		SupportEmail: h.supportEmail, UpdatedAt: "06.05.2026",
+	}))
+}
+
+func (h *Handler) termsPage(c *fiber.Ctx) error {
+	return render(c, templates.Terms(templates.LegalData{
+		SupportEmail: h.supportEmail, UpdatedAt: "06.05.2026",
+	}))
 }
 
 func (h *Handler) supportPage(c *fiber.Ctx) error {
@@ -295,6 +312,9 @@ func (h *Handler) registerSubmit(c *fiber.Ctx) error {
 	if disposable.IsDisposable(email) {
 		return h.renderRegister(c, "Используйте постоянный email-адрес", refCode)
 	}
+	if c.FormValue("accept_terms") != "1" {
+		return h.renderRegister(c, "Примите условия соглашения", refCode)
+	}
 	if len(password) < 8 {
 		return h.renderRegister(c, "Пароль минимум 8 символов", refCode)
 	}
@@ -311,8 +331,8 @@ func (h *Handler) registerSubmit(c *fiber.Ctx) error {
 	if refCode != "" {
 		if referrer, err := h.db.GetUserByReferralCode(c.Context(), refCode); err == nil && referrer.ID != user.ID {
 			if _, err := h.db.CreateReferral(c.Context(), referrer.ID, user.ID, referralBonusDays); err == nil {
-				_ = h.db.ExtendSubscription(c.Context(), referrer.ID, referralBonusDays)
-				_ = h.db.ExtendSubscription(c.Context(), user.ID, referralBonusDays)
+				_ = h.provisioner.ExtendUserSubscription(c.Context(), referrer.ID, referralBonusDays)
+				_ = h.provisioner.ExtendUserSubscription(c.Context(), user.ID, referralBonusDays)
 			}
 		}
 	}
@@ -591,7 +611,7 @@ func (h *Handler) buyPlanSubmit(c *fiber.Ctx) error {
 		}
 		effectiveCost = ec
 		if bd > 0 {
-			_ = h.db.ExtendSubscription(c.Context(), userID, bd)
+			_ = h.provisioner.ExtendUserSubscription(c.Context(), userID, bd)
 		}
 	}
 

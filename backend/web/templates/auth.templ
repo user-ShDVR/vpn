@@ -77,6 +77,15 @@ templ Register(d RegisterData) {
 					<input class="input-field" type="text" name="captcha_answer" inputmode="numeric" pattern="-?[0-9]+" required autocomplete="off"/>
 					<input type="hidden" name="captcha_token" value={ d.CaptchaToken }/>
 				</div>
+				<label class="flex items-start gap-2 text-xs text-dark-400">
+					<input type="checkbox" name="accept_terms" value="1" required class="mt-0.5"/>
+					<span>
+						Я принимаю
+						<a href="/terms" target="_blank" class="text-accent-400 underline">пользовательское соглашение</a>
+						и
+						<a href="/privacy" target="_blank" class="text-accent-400 underline">политику конфиденциальности</a>
+					</span>
+				</label>
 				<button class="btn-primary w-full" type="submit">Создать аккаунт</button>
 			</form>
 			<p class="text-center text-sm text-dark-400">

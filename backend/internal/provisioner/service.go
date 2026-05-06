@@ -34,19 +34,21 @@ func (s *Service) panelFor(srv *db.Server) *panel.Client {
 	return pc
 }
 
-const ProvisionServerCount = 3
-
 // Provision creates VPN clients on top-N least-loaded entry servers via 3x-ui API.
 // Best-effort: returns URIs from servers that succeeded. Errors only if all fail.
+// N comes from plan.ServerCount (fallback 1 for legacy plans).
 func (s *Service) Provision(ctx context.Context, user *db.User, sub *db.Subscription) ([]string, error) {
-	servers, err := s.db.GetTopNLeastLoadedEntryServers(ctx, ProvisionServerCount)
-	if err != nil || len(servers) == 0 {
-		return nil, fmt.Errorf("no available entry servers: %w", err)
-	}
-
 	plan, err := s.db.GetPlanByID(ctx, sub.PlanID)
 	if err != nil {
 		return nil, fmt.Errorf("get plan: %w", err)
+	}
+	n := plan.ServerCount
+	if n <= 0 {
+		n = 1
+	}
+	servers, err := s.db.GetTopNLeastLoadedEntryServers(ctx, n)
+	if err != nil || len(servers) == 0 {
+		return nil, fmt.Errorf("no available entry servers: %w", err)
 	}
 
 	var (
@@ -162,15 +164,14 @@ func (s *Service) Deprovision(ctx context.Context, userID uuid.UUID) error {
 	return s.db.DeleteServerClientsByUser(ctx, userID)
 }
 
-// ActivateFreePlanIfNone activates the seeded "Free" plan for the user if they
-// have no active subscription. Idempotent: returns existing sub if already active.
+// ActivateFreePlanIfNone activates the cheapest non-Free plan for a user with
+// no active subscription. Idempotent: returns existing sub if already active.
 func (s *Service) ActivateFreePlanIfNone(ctx context.Context, user *db.User) (*db.Subscription, []string, error) {
 	if existing, err := s.db.GetActiveSubscription(ctx, user.ID); err == nil && existing != nil {
 		uris, _ := s.GetSubURIs(ctx, user.ID)
 		if len(uris) > 0 {
 			return existing, uris, nil
 		}
-		// Sub exists but no provisioned clients — provision now.
 		uris, err := s.Provision(ctx, user, existing)
 		return existing, uris, err
 	}
@@ -179,19 +180,21 @@ func (s *Service) ActivateFreePlanIfNone(ctx context.Context, user *db.User) (*d
 	if err != nil {
 		return nil, nil, fmt.Errorf("list plans: %w", err)
 	}
-	var freePlan *db.Plan
+	var pick *db.Plan
 	for i := range plans {
 		if plans[i].Name == "Free" {
-			freePlan = &plans[i]
-			break
+			continue
+		}
+		if pick == nil || plans[i].CostKopecks < pick.CostKopecks {
+			pick = &plans[i]
 		}
 	}
-	if freePlan == nil {
-		return nil, nil, fmt.Errorf("no Free plan seeded")
+	if pick == nil {
+		return nil, nil, fmt.Errorf("no plan seeded")
 	}
 
-	expiresAt := time.Now().AddDate(0, 0, freePlan.DurationDays)
-	sub, err := s.db.CreateSubscription(ctx, user.ID, freePlan.ID, expiresAt)
+	expiresAt := time.Now().AddDate(0, 0, pick.DurationDays)
+	sub, err := s.db.CreateSubscription(ctx, user.ID, pick.ID, expiresAt)
 	if err != nil {
 		return nil, nil, fmt.Errorf("create subscription: %w", err)
 	}
@@ -254,6 +257,66 @@ func (s *Service) GetOnlineDevices(ctx context.Context, userID uuid.UUID) (map[s
 		out[sc.ServerName] = ips
 	}
 	return out, nil
+}
+
+// ExtendUserSubscription bumps DB expiry by N days AND syncs the new absolute
+// expiry to every xray client (so 3x-ui doesn't disconnect them when the
+// original deadline hits).
+func (s *Service) ExtendUserSubscription(ctx context.Context, userID uuid.UUID, days int) error {
+	if err := s.db.ExtendSubscription(ctx, userID, days); err != nil {
+		return fmt.Errorf("db extend: %w", err)
+	}
+	sub, err := s.db.GetActiveSubscription(ctx, userID)
+	if err != nil {
+		return nil // no active sub, nothing to sync
+	}
+	plan, err := s.db.GetPlanByID(ctx, sub.PlanID)
+	if err != nil {
+		return fmt.Errorf("get plan: %w", err)
+	}
+	clients, err := s.db.GetServerClientsByUser(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("get clients: %w", err)
+	}
+	if len(clients) == 0 {
+		return nil
+	}
+	servers, err := s.db.ListServers(ctx)
+	if err != nil {
+		return fmt.Errorf("list servers: %w", err)
+	}
+	srvMap := make(map[uuid.UUID]*db.Server, len(servers))
+	for i := range servers {
+		srvMap[servers[i].ID] = &servers[i]
+	}
+	expiryMs := sub.ExpiresAt.UnixMilli()
+	var totalGB int64
+	if plan.TrafficLimitGB != nil {
+		totalGB = int64(*plan.TrafficLimitGB) * 1024 * 1024 * 1024
+	}
+	for _, sc := range clients {
+		srv, ok := srvMap[sc.ServerID]
+		if !ok {
+			continue
+		}
+		pc := s.panelFor(srv)
+		if err := pc.Login(ctx); err != nil {
+			log.Printf("[extend] login %s failed: %v", srv.Name, err)
+			continue
+		}
+		if err := pc.UpdateClient(ctx, srv.InboundID, sc.ClientUUID.String(), panel.XrayClient{
+			ID:         sc.ClientUUID.String(),
+			Email:      sc.XrayEmail,
+			LimitIP:    plan.MaxDevices,
+			TotalGB:    totalGB,
+			ExpiryTime: expiryMs,
+			Enable:     true,
+			SubID:      sc.SubID,
+		}); err != nil {
+			log.Printf("[extend] update %s/%s failed: %v", srv.Name, sc.XrayEmail, err)
+		}
+	}
+	return nil
 }
 
 // GetSubURIs returns all VLESS URIs for a user (one per provisioned server).

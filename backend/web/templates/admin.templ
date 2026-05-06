@@ -12,6 +12,7 @@ type AdminStatsData struct {
 	Users               int
 	ActiveSubscriptions int
 	ActiveServers       int
+	SyncMsg             string
 }
 
 templ AdminLayout(title, active string) {
@@ -51,6 +52,20 @@ templ AdminStats(d AdminStatsData) {
 			@statCard("Пользователей", strconv.Itoa(d.Users))
 			@statCard("Активных подписок", strconv.Itoa(d.ActiveSubscriptions))
 			@statCard("Серверов", strconv.Itoa(d.ActiveServers))
+		</div>
+
+		<div class="glass rounded-2xl p-5 space-y-3">
+			<h3 class="text-sm font-bold uppercase tracking-wider text-dark-400">Синхронизация xray</h3>
+			<p class="text-xs text-dark-400">
+				Прогоняет UpdateClient на все активные подписки — выставляет в xray текущий
+				expires_at из БД. Используй после миграций или если расхождение между кабинетом и панелью.
+			</p>
+			if d.SyncMsg != "" {
+				<div class="rounded-2xl border border-success-500/30 bg-success-500/10 p-3 text-sm text-success-400">{ d.SyncMsg }</div>
+			}
+			<form method="post" action="/admin/sync-expiries">
+				<button class="btn-primary text-sm" type="submit">Синхронизировать expiry</button>
+			</form>
 		</div>
 	}
 }

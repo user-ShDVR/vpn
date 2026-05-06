@@ -157,8 +157,8 @@ func (h *Handler) authRegister(c *fiber.Ctx) error {
 		referrer, refErr := h.db.GetUserByReferralCode(c.Context(), req.ReferralCode)
 		if refErr == nil && referrer.ID != user.ID {
 			if _, refErr := h.db.CreateReferral(c.Context(), referrer.ID, user.ID, referralBonusDays); refErr == nil {
-				_ = h.db.ExtendSubscription(c.Context(), referrer.ID, referralBonusDays)
-				_ = h.db.ExtendSubscription(c.Context(), user.ID, referralBonusDays)
+				_ = h.provisioner.ExtendUserSubscription(c.Context(), referrer.ID, referralBonusDays)
+				_ = h.provisioner.ExtendUserSubscription(c.Context(), user.ID, referralBonusDays)
 			}
 		}
 	}
@@ -336,7 +336,7 @@ func (h *Handler) autoProvision(c *fiber.Ctx) error {
 		})
 	}
 
-	// No subscription - find Free plan and activate
+	// No subscription - pick cheapest non-Free plan and activate
 	plans, err := h.db.ListPlans(c.Context())
 	if err != nil {
 		return fiber.ErrInternalServerError
@@ -345,15 +345,16 @@ func (h *Handler) autoProvision(c *fiber.Ctx) error {
 	var freePlan *db.Plan
 	for i := range plans {
 		if plans[i].Name == "Free" {
+			continue
+		}
+		if freePlan == nil || plans[i].CostKopecks < freePlan.CostKopecks {
 			freePlan = &plans[i]
-			break
 		}
 	}
 	if freePlan == nil {
-		return fiber.NewError(fiber.StatusInternalServerError, "free plan not found")
+		return fiber.NewError(fiber.StatusInternalServerError, "no plan seeded")
 	}
 
-	// Create subscription
 	expiresAt := time.Now().Add(time.Duration(freePlan.DurationDays) * 24 * time.Hour)
 	sub, err := h.db.CreateSubscription(c.Context(), userID, freePlan.ID, expiresAt)
 	if err != nil {
@@ -415,7 +416,7 @@ type applyReferralRequest struct {
 	Code string `json:"code"`
 }
 
-const referralBonusDays = 5
+const referralBonusDays = 3
 
 func (h *Handler) applyReferral(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uuid.UUID)
@@ -448,8 +449,8 @@ func (h *Handler) applyReferral(c *fiber.Ctx) error {
 	}
 
 	// Extend both subscriptions by 5 days
-	_ = h.db.ExtendSubscription(c.Context(), referrer.ID, referralBonusDays)
-	_ = h.db.ExtendSubscription(c.Context(), userID, referralBonusDays)
+	_ = h.provisioner.ExtendUserSubscription(c.Context(), referrer.ID, referralBonusDays)
+	_ = h.provisioner.ExtendUserSubscription(c.Context(), userID, referralBonusDays)
 
 	return c.JSON(fiber.Map{
 		"message":    fmt.Sprintf("Both you and the referrer received %d bonus days", referralBonusDays),
@@ -914,7 +915,7 @@ func (h *Handler) buyPlan(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "promo code invalid: "+err.Error())
 	}
 	if bonusDays > 0 {
-		_ = h.db.ExtendSubscription(c.Context(), userID, bonusDays)
+		_ = h.provisioner.ExtendUserSubscription(c.Context(), userID, bonusDays)
 	}
 
 	if effectiveCost > 0 {

@@ -54,6 +54,13 @@ templ Layout(title, activeNav string, authed bool) {
 			<main class={ mainClass(authed) }>
 				{ children... }
 			</main>
+			<footer class="mx-auto max-w-6xl px-4 pb-24 pt-4 text-center text-[11px] text-dark-500 lg:pb-6">
+				<a href="/terms" class="hover:text-dark-300">Соглашение</a>
+				·
+				<a href="/privacy" class="hover:text-dark-300">Конфиденциальность</a>
+				·
+				<a href="/support" class="hover:text-dark-300">Поддержка</a>
+			</footer>
 			if authed {
 				@BottomNav(activeNav)
 			}
