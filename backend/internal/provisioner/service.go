@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	neturl "net/url"
 	"strings"
 	"sync"
 	"time"
@@ -320,6 +321,8 @@ func (s *Service) ExtendUserSubscription(ctx context.Context, userID uuid.UUID, 
 }
 
 // GetSubURIs returns all VLESS URIs for a user (one per provisioned server).
+// Each URI's #remark is rewritten as "СвязьOK · <server_name>" so VPN clients
+// show readable labels instead of the raw email/expiry suffix.
 func (s *Service) GetSubURIs(ctx context.Context, userID uuid.UUID) ([]string, error) {
 	clients, err := s.db.GetServerClientsByUser(ctx, userID)
 	if err != nil {
@@ -352,9 +355,29 @@ func (s *Service) GetSubURIs(ctx context.Context, userID uuid.UUID) ([]string, e
 		if err != nil || uri == "" {
 			continue
 		}
-		uris = append(uris, uri)
+		uris = append(uris, relabelURIs(uri, "СвязьOK · "+srv.Name))
 	}
 	return uris, nil
+}
+
+// relabelURIs replaces the trailing #remark on each VLESS line with a custom
+// label. Handles multi-line bodies (3x-ui returns one line per inbound).
+func relabelURIs(body, label string) string {
+	encoded := neturl.PathEscape(label)
+	var out []string
+	for _, line := range strings.Split(strings.TrimSpace(body), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		if idx := strings.LastIndex(line, "#"); idx >= 0 {
+			line = line[:idx+1] + encoded
+		} else {
+			line = line + "#" + encoded
+		}
+		out = append(out, line)
+	}
+	return strings.Join(out, "\n")
 }
 
 // GetTraffic fetches the user's traffic stats from 3x-ui.
