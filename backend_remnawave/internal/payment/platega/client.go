@@ -32,12 +32,18 @@ type Client struct {
 	http          *http.Client
 }
 
+// New constructs a Platega client.
+//
+// paymentMethod semantics:
+//   - 0 (or unset) → multi-method mode. Client hits POST /v2/transaction/process
+//     WITHOUT a paymentMethod field, and Platega renders its own picker page so
+//     the user chooses СБП / crypto / cards / etc on Platega's side.
+//   - non-zero      → single-method mode. Hits POST /transaction/process with
+//     paymentMethod set. Valid IDs: 2=СБП QR, 3=ЕРИП, 11=Карты RU,
+//     12=Карты Int., 13=Crypto.
 func New(merchantID, secret, baseURL string, paymentMethod int) *Client {
 	if baseURL == "" {
 		baseURL = DefaultBaseURL
-	}
-	if paymentMethod == 0 {
-		paymentMethod = 1
 	}
 	return &Client{
 		merchantID:    merchantID,
@@ -56,7 +62,9 @@ type PaymentDetails struct {
 }
 
 type CreatePaymentRequest struct {
-	PaymentMethod  int            `json:"paymentMethod"`
+	// omitempty: in v2 multi-method mode we send nothing here so Platega renders
+	// the universal picker page.
+	PaymentMethod  int            `json:"paymentMethod,omitempty"`
 	PaymentDetails PaymentDetails `json:"paymentDetails"`
 	Description    string         `json:"description"`
 	Return         string         `json:"return"`
@@ -65,13 +73,15 @@ type CreatePaymentRequest struct {
 }
 
 type CreatePaymentResponse struct {
-	ID            string `json:"id"`
-	RedirectURL   string `json:"redirect"`
-	RedirectAlt   string `json:"redirectUrl"`
-	URL           string `json:"url"`
-	ExpiresIn     string `json:"expiresIn"`
-	Status        string `json:"status"`
-	Raw           json.RawMessage
+	// Platega returns transactionId in the create-payment response. The webhook
+	// payload uses `id` for the same value — different field names on each side.
+	ID          string `json:"transactionId"`
+	RedirectURL string `json:"redirect"`
+	RedirectAlt string `json:"redirectUrl"`
+	URL         string `json:"url"`
+	ExpiresIn   string `json:"expiresIn"`
+	Status      string `json:"status"`
+	Raw         json.RawMessage
 }
 
 // PayURL returns the first non-empty redirect-style URL the response provided.
@@ -94,7 +104,7 @@ type Transaction struct {
 
 // CreatePayment creates a hosted payment on Platega and returns the redirect
 // URL the user should be sent to. `description` is truncated to 64 bytes (UTF-8
-// safe).
+// safe). Picks v2 multi-method endpoint when paymentMethod is 0.
 func (c *Client) CreatePayment(ctx context.Context, amountRubles float64, description, returnURL, failedURL, payload string) (*CreatePaymentResponse, error) {
 	body := CreatePaymentRequest{
 		PaymentMethod:  c.paymentMethod,
@@ -104,8 +114,12 @@ func (c *Client) CreatePayment(ctx context.Context, amountRubles float64, descri
 		FailedURL:      failedURL,
 		Payload:        payload,
 	}
+	endpoint := "/transaction/process"
+	if c.paymentMethod == 0 {
+		endpoint = "/v2/transaction/process"
+	}
 	var resp CreatePaymentResponse
-	raw, err := c.doRetry(ctx, "POST", "/transaction/process", body)
+	raw, err := c.doRetry(ctx, "POST", endpoint, body)
 	if err != nil {
 		return nil, err
 	}
