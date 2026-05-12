@@ -23,6 +23,7 @@ import (
 	"github.com/shdvr/vpn-backend/internal/payment"
 	"github.com/shdvr/vpn-backend/internal/payment/platega"
 	"github.com/shdvr/vpn-backend/internal/provisioner"
+	"github.com/shdvr/vpn-backend/internal/remnawave"
 	"github.com/shdvr/vpn-backend/web/templates"
 	"github.com/skip2/go-qrcode"
 	"golang.org/x/crypto/bcrypt"
@@ -47,6 +48,8 @@ type Config struct {
 	SupportEmail       string
 	SupportFAQURL      string
 	RequireEmailVerify bool
+	Remnawave          *remnawave.Client
+	SubpageConfigUUID  string
 }
 
 type Handler struct {
@@ -65,6 +68,8 @@ type Handler struct {
 	supportEmail       string
 	supportFAQURL      string
 	requireEmailVerify bool
+	rw                 *remnawave.Client
+	subpageConfigUUID  string
 }
 
 func NewHandler(c Config) *Handler {
@@ -78,6 +83,8 @@ func NewHandler(c Config) *Handler {
 		mailer:       c.Mailer,
 		supportTGURL: c.SupportTGURL, supportEmail: c.SupportEmail, supportFAQURL: c.SupportFAQURL,
 		requireEmailVerify: c.RequireEmailVerify,
+		rw:                 c.Remnawave,
+		subpageConfigUUID:  c.SubpageConfigUUID,
 	}
 }
 
@@ -119,6 +126,7 @@ func (h *Handler) Register(app *fiber.App) {
 	g.Post("/verify-email/resend", h.resendVerifyEmail)
 	g.Get("/dashboard", h.dashboardPage)
 	g.Get("/subscriptions", h.subscriptionsPage)
+	g.Get("/connection", h.connectionPage)
 	g.Post("/dashboard/rotate", h.rotateSubAndRender)
 	g.Get("/subscription/purchase", h.purchasePage)
 	g.Post("/subscription/purchase/:plan_id", h.buyPlanSubmit)
@@ -133,8 +141,6 @@ func (h *Handler) Register(app *fiber.App) {
 	g.Get("/referral", h.referralPage)
 	g.Get("/support", h.supportPage)
 	g.Get("/info", h.infoPage)
-	g.Get("/wheel", h.wheelPage)
-	g.Get("/gift", h.giftPage)
 }
 
 // --- Legal / support / info ---
@@ -522,6 +528,122 @@ func (h *Handler) subscriptionsPage(c *fiber.Ctx) error {
 	return render(c, templates.Subscriptions(d))
 }
 
+// connectionPage renders the Remnawave install-guide (platforms / apps /
+// install blocks / deep-link buttons) inside our cabinet — bedolaga's
+// approach ported to templ. Falls back gracefully if no subpage config UUID
+// or panel call fails (e.g. token missing, panel down): shows the page
+// header but with an empty-state notice.
+func (h *Handler) connectionPage(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(uuid.UUID)
+
+	d := templates.ConnectionData{Lang: "ru"}
+
+	subURL, _ := h.provisioner.GetSubscriptionURL(c.Context(), userID)
+	d.SubscriptionURL = subURL
+
+	if h.rw == nil || !h.rw.Configured() || h.subpageConfigUUID == "" {
+		return render(c, templates.Connection(d))
+	}
+
+	cfg, err := h.rw.GetSubscriptionPageConfig(c.Context(), h.subpageConfigUUID)
+	if err != nil {
+		log.Printf("connection: get subpage config: %v", err)
+		d.Error = "Не удалось загрузить инструкцию подключения. Попробуйте позже."
+		return render(c, templates.Connection(d))
+	}
+
+	d.SvgLibrary = cfg.SvgLibrary
+	d.BaseTranslations = cfg.BaseTranslations
+
+	platformOrder := []string{"ios", "android", "windows", "macos", "linux", "androidTV", "appleTV"}
+	platformNames := map[string]string{
+		"ios": "iOS", "android": "Android", "windows": "Windows",
+		"macos": "macOS", "linux": "Linux",
+		"androidTV": "Android TV", "appleTV": "Apple TV",
+	}
+	detected := detectPlatformFromUA(c.Get("User-Agent"))
+
+	for _, key := range platformOrder {
+		p, ok := cfg.Platforms[key]
+		if !ok || len(p.Apps) == 0 {
+			continue
+		}
+		name := platformNames[key]
+		if n := templates.PlatformDisplayName(p, d.Lang); n != "" {
+			name = n
+		}
+		d.Platforms = append(d.Platforms, templates.PlatformOption{
+			Key: key, Name: name, SvgIconKey: p.SvgIconKey,
+		})
+	}
+	if len(d.Platforms) == 0 {
+		return render(c, templates.Connection(d))
+	}
+
+	selectedKey := c.Query("platform")
+	if !platformInList(d.Platforms, selectedKey) {
+		if platformInList(d.Platforms, detected) {
+			selectedKey = detected
+		} else {
+			selectedKey = d.Platforms[0].Key
+		}
+	}
+	d.SelectedPlatform = selectedKey
+
+	platform := cfg.Platforms[selectedKey]
+	d.Apps = platform.Apps
+
+	appIdx := 0
+	if q := c.Query("app"); q != "" {
+		if v, err := strconv.Atoi(q); err == nil && v >= 0 && v < len(d.Apps) {
+			appIdx = v
+		}
+	} else {
+		for i, a := range d.Apps {
+			if a.Featured {
+				appIdx = i
+				break
+			}
+		}
+	}
+	d.SelectedAppIndex = appIdx
+	d.SelectedApp = &d.Apps[appIdx]
+
+	return render(c, templates.Connection(d))
+}
+
+func platformInList(list []templates.PlatformOption, key string) bool {
+	if key == "" {
+		return false
+	}
+	for _, p := range list {
+		if p.Key == key {
+			return true
+		}
+	}
+	return false
+}
+
+func detectPlatformFromUA(ua string) string {
+	u := strings.ToLower(ua)
+	switch {
+	case strings.Contains(u, "iphone"), strings.Contains(u, "ipad"), strings.Contains(u, "ipod"):
+		return "ios"
+	case strings.Contains(u, "android"):
+		if strings.Contains(u, "tv") {
+			return "androidTV"
+		}
+		return "android"
+	case strings.Contains(u, "macintosh"), strings.Contains(u, "mac os x"):
+		return "macos"
+	case strings.Contains(u, "windows"):
+		return "windows"
+	case strings.Contains(u, "linux"):
+		return "linux"
+	}
+	return ""
+}
+
 func (h *Handler) rotateSubAndRender(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uuid.UUID)
 	url, err := h.provisioner.RotateSubscription(c.Context(), userID)
@@ -791,15 +913,6 @@ func (h *Handler) topupResultPage(c *fiber.Ctx) error {
 		}
 	}
 	return render(c, templates.TopupResult(d))
-}
-
-func (h *Handler) wheelPage(c *fiber.Ctx) error {
-	return render(c, templates.Wheel())
-}
-
-func (h *Handler) giftPage(c *fiber.Ctx) error {
-	plans, _ := h.db.ListPlans(c.Context())
-	return render(c, templates.Gift(templates.GiftData{Plans: plans}))
 }
 
 // plategaReturn is hit by the browser when Platega redirects the user back.

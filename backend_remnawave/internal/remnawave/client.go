@@ -260,6 +260,104 @@ func (c *Client) ListInternalSquads(ctx context.Context) ([]Squad, error) {
 	return out.InternalSquads, nil
 }
 
+// --- Subscription page configs (install-guide data) ---
+//
+// Panel admin creates one or more named subpage configs in the Remnawave UI.
+// Each holds the platform/app/block tree that the install-page renders. We
+// fetch a chosen config by UUID once per cabinet request and render it
+// ourselves (Bedolaga-style port, server-side).
+
+type LocalizedText map[string]string
+
+type SubscriptionPageConfig struct {
+	Version          string                   `json:"version"`
+	Locales          []string                 `json:"locales"`
+	BaseTranslations map[string]LocalizedText `json:"baseTranslations"`
+	SvgLibrary       map[string]SvgEntry      `json:"svgLibrary"`
+	Platforms        map[string]Platform      `json:"platforms"`
+	BaseSettings     BaseSettings             `json:"baseSettings"`
+	UIConfig         UIConfig                 `json:"uiConfig"`
+}
+
+// SvgEntry handles both legacy {key: "<svg>...</svg>"} and {key: {svgString: ...}} shapes.
+type SvgEntry struct {
+	SvgString string `json:"svgString"`
+}
+
+func (s *SvgEntry) UnmarshalJSON(data []byte) error {
+	if len(data) > 0 && data[0] == '"' {
+		var str string
+		if err := json.Unmarshal(data, &str); err != nil {
+			return err
+		}
+		s.SvgString = str
+		return nil
+	}
+	type alias SvgEntry
+	var a alias
+	if err := json.Unmarshal(data, &a); err != nil {
+		return err
+	}
+	*s = SvgEntry(a)
+	return nil
+}
+
+type Platform struct {
+	DisplayName LocalizedText `json:"displayName"`
+	SvgIconKey  string        `json:"svgIconKey"`
+	Apps        []App         `json:"apps"`
+}
+
+type App struct {
+	Name                 string  `json:"name"`
+	SvgIconKey           string  `json:"svgIconKey"`
+	Featured             bool    `json:"featured"`
+	UrlScheme            string  `json:"urlScheme"`
+	IsNeedBase64Encoding bool    `json:"isNeedBase64Encoding"`
+	Blocks               []Block `json:"blocks"`
+}
+
+type Block struct {
+	Title        LocalizedText `json:"title"`
+	Description  LocalizedText `json:"description"`
+	SvgIconKey   string        `json:"svgIconKey"`
+	SvgIconColor string        `json:"svgIconColor"`
+	Buttons      []Button      `json:"buttons"`
+}
+
+type Button struct {
+	Type       string        `json:"type"`
+	Text       LocalizedText `json:"text"`
+	URL        string        `json:"url"`
+	Link       string        `json:"link"`
+	SvgIconKey string        `json:"svgIconKey"`
+}
+
+type BaseSettings struct {
+	ShowConnectionKeys    bool   `json:"showConnectionKeys"`
+	HideGetLinkButton     bool   `json:"hideGetLinkButton"`
+	IsShowTutorialButton  bool   `json:"isShowTutorialButton"`
+	TutorialURL           string `json:"tutorialUrl"`
+}
+
+type UIConfig struct {
+	InstallationGuidesBlockType string `json:"installationGuidesBlockType"`
+	SubscriptionInfoBlockType   string `json:"subscriptionInfoBlockType"`
+}
+
+// GetSubscriptionPageConfig fetches one stored subpage config by its UUID.
+// The Remnawave envelope is {response: {uuid, viewPosition, name, config: {...}}}
+// — our do() unwraps `response`, we then unwrap `config`.
+func (c *Client) GetSubscriptionPageConfig(ctx context.Context, configUUID string) (*SubscriptionPageConfig, error) {
+	var wrapper struct {
+		Config SubscriptionPageConfig `json:"config"`
+	}
+	if err := c.do(ctx, "GET", "/api/subscription-page-configs/"+configUUID, nil, &wrapper); err != nil {
+		return nil, err
+	}
+	return &wrapper.Config, nil
+}
+
 func (c *Client) ListNodes(ctx context.Context) ([]Node, error) {
 	var out struct {
 		Nodes []Node `json:"nodes"`

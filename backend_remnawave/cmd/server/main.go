@@ -36,8 +36,9 @@ type Config struct {
 	PublicBaseURL  string
 	WebStaticPath  string
 
-	RemnawaveBaseURL string
-	RemnawaveToken   string
+	RemnawaveBaseURL        string
+	RemnawaveToken          string
+	RemnawaveSubpageConfigUUID string
 
 	PlategaBaseURL       string
 	PlategaMerchantID    string
@@ -71,8 +72,9 @@ func loadConfig() Config {
 		PublicBaseURL:  getEnv("PUBLIC_BASE_URL", "http://localhost:8080"),
 		WebStaticPath:  getEnv("WEB_STATIC_PATH", "./web/static"),
 
-		RemnawaveBaseURL: getEnv("REMNAWAVE_BASE_URL", ""),
-		RemnawaveToken:   getEnv("REMNAWAVE_TOKEN", ""),
+		RemnawaveBaseURL:           getEnv("REMNAWAVE_BASE_URL", ""),
+		RemnawaveToken:             getEnv("REMNAWAVE_TOKEN", ""),
+		RemnawaveSubpageConfigUUID: getEnv("REMNAWAVE_SUBPAGE_CONFIG_UUID", ""),
 
 		PlategaBaseURL:       getEnv("PLATEGA_BASE_URL", ""),
 		PlategaMerchantID:    getEnv("PLATEGA_MERCHANT_ID", ""),
@@ -242,6 +244,8 @@ func main() {
 		SupportEmail:     cfg.SupportEmail,
 		SupportFAQURL:    cfg.SupportFAQURL,
 		RequireEmailVerify: cfg.RequireEmailVerify,
+		Remnawave:        rw,
+		SubpageConfigUUID: cfg.RemnawaveSubpageConfigUUID,
 	})
 	webHandler.Register(app)
 

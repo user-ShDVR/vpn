@@ -70,8 +70,9 @@ templ SubCard(d SubscriptionsData) {
 					</div>
 				</div>
 			</div>
+			<a href="/connection" class="btn-primary w-full justify-center">Инструкция подключения</a>
 			<div>
-				<div class="mb-2 text-[10px] font-medium uppercase tracking-wider text-dark-50/35">Открыть в клиенте</div>
+				<div class="mb-2 text-[10px] font-medium uppercase tracking-wider text-dark-50/35">Быстрый импорт</div>
 				<div class="grid grid-cols-3 gap-2">
 					<a class="btn-secondary text-center" href={ templ.SafeURL("hiddify://install-config?url=" + url.QueryEscape(d.SubURL)) }>Hiddify</a>
 					<a class="btn-secondary text-center" href={ templ.SafeURL("v2raytun://import/" + url.QueryEscape(d.SubURL)) }>V2RayTun</a>
