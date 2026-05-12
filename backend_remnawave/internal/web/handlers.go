@@ -756,9 +756,21 @@ func (h *Handler) renderPurchase(c *fiber.Ctx, errMsg string) error {
 	}
 	currentSub, currentPlan := h.activeSubAndPlan(c.Context(), userID)
 	return render(c, templates.Purchase(templates.PurchaseData{
-		Plans: plans, BalanceKopecks: user.BalanceKopecks, ErrMsg: errMsg,
+		Plans: purchasablePlans(plans), BalanceKopecks: user.BalanceKopecks, ErrMsg: errMsg,
 		CurrentPlan: currentPlan, CurrentSub: currentSub,
 	}))
+}
+
+// purchasablePlans filters out the trial / zero-cost plans — those are
+// granted automatically on email verification, never bought.
+func purchasablePlans(plans []db.Plan) []db.Plan {
+	out := plans[:0:0]
+	for _, p := range plans {
+		if p.CostKopecks > 0 {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 func (h *Handler) buyPlanSubmit(c *fiber.Ctx) error {
@@ -770,6 +782,9 @@ func (h *Handler) buyPlanSubmit(c *fiber.Ctx) error {
 	plan, err := h.db.GetPlanByID(c.Context(), planID)
 	if err != nil {
 		return h.renderPurchase(c, "Тариф не найден")
+	}
+	if plan.CostKopecks <= 0 {
+		return h.renderPurchase(c, "Этот тариф нельзя купить")
 	}
 	user, err := h.db.GetUserByID(c.Context(), userID)
 	if err != nil {
