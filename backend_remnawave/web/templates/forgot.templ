@@ -1,0 +1,36 @@
+package templates
+
+templ Forgot(errMsg string, sent bool) {
+	@Layout("Сброс пароля", "", false) {
+		<div class="space-y-6">
+			<div class="text-center">
+				<div class="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-accent-500/15 text-accent-400 text-2xl font-bold">С</div>
+				<h1 class="mt-4 text-2xl font-bold text-dark-50">СвязьOK</h1>
+				<p class="mt-1 text-xs text-dark-500">Ускоритель связи</p>
+				<p class="mt-3 text-sm text-dark-400">Сброс пароля</p>
+			</div>
+			if sent {
+				<div class="glass rounded-3xl p-6 space-y-3">
+					<div class="rounded-2xl border border-success-500/30 bg-success-500/10 p-3 text-sm text-success-400">
+						Если такой email зарегистрирован — письмо со ссылкой отправлено. Проверьте папку «Спам».
+					</div>
+					<a href="/login" class="btn-secondary w-full">← На вход</a>
+				</div>
+			} else {
+				<form method="post" action="/forgot" class="glass space-y-4 rounded-3xl p-6">
+					if errMsg != "" {
+						<div class="rounded-2xl border border-error-500/30 bg-error-500/10 p-3 text-sm text-error-400">{ errMsg }</div>
+					}
+					<div>
+						<label class="mb-2 block text-xs font-medium uppercase tracking-wider text-dark-400">Email</label>
+						<input class="input-field" type="email" name="email" required autofocus/>
+					</div>
+					<button class="btn-primary w-full" type="submit">Отправить ссылку</button>
+				</form>
+				<p class="text-center text-sm text-dark-400">
+					<a href="/login" class="text-accent-400 hover:underline">← На вход</a>
+				</p>
+			}
+		</div>
+	}
+}

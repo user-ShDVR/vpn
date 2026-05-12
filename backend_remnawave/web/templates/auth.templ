@@ -1,0 +1,96 @@
+package templates
+
+templ Login(errMsg string) {
+	@Layout("Вход", "", false) {
+		<div class="space-y-6">
+			<div class="text-center">
+				<div class="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-accent-500/15 text-accent-400 text-2xl font-bold">С</div>
+				<h1 class="mt-4 text-2xl font-bold text-dark-50">СвязьOK</h1>
+				<p class="mt-1 text-xs text-dark-500">Ускоритель связи</p>
+				<p class="mt-3 text-sm text-dark-400">Вход в кабинет</p>
+			</div>
+			<form method="post" action="/login" class="glass space-y-4 rounded-3xl p-6">
+				if errMsg != "" {
+					<div class="rounded-2xl border border-error-500/30 bg-error-500/10 p-3 text-sm text-error-400">{ errMsg }</div>
+				}
+				<div>
+					<label class="mb-2 block text-xs font-medium uppercase tracking-wider text-dark-400">Email</label>
+					<input class="input-field" type="email" name="email" required autofocus/>
+				</div>
+				<div>
+					<label class="mb-2 block text-xs font-medium uppercase tracking-wider text-dark-400">Пароль</label>
+					<input class="input-field" type="password" name="password" required minlength="8"/>
+				</div>
+				<button class="btn-primary w-full" type="submit">Войти</button>
+				<p class="text-center text-xs text-dark-500">
+					<a href="/forgot" class="hover:text-dark-300">Забыли пароль?</a>
+				</p>
+			</form>
+			<p class="text-center text-sm text-dark-400">
+				Нет аккаунта? <a href="/register" class="text-accent-400 hover:underline">Регистрация</a>
+			</p>
+		</div>
+	}
+}
+
+type RegisterData struct {
+	ErrMsg          string
+	RefCode         string
+	CaptchaQuestion string
+	CaptchaToken    string
+}
+
+templ Register(d RegisterData) {
+	@Layout("Регистрация", "", false) {
+		<div class="space-y-6">
+			<div class="text-center">
+				<div class="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-accent-500/15 text-accent-400 text-2xl font-bold">С</div>
+				<h1 class="mt-4 text-2xl font-bold text-dark-50">СвязьOK</h1>
+				<p class="mt-1 text-xs text-dark-500">Ускоритель связи</p>
+				<p class="mt-3 text-sm text-dark-400">Создайте аккаунт</p>
+			</div>
+			<form method="post" action="/register" class="glass space-y-4 rounded-3xl p-6">
+				if d.ErrMsg != "" {
+					<div class="rounded-2xl border border-error-500/30 bg-error-500/10 p-3 text-sm text-error-400">{ d.ErrMsg }</div>
+				}
+				<div>
+					<label class="mb-2 block text-xs font-medium uppercase tracking-wider text-dark-400">Email</label>
+					<input class="input-field" type="email" name="email" required autofocus/>
+				</div>
+				<div>
+					<label class="mb-2 block text-xs font-medium uppercase tracking-wider text-dark-400">Пароль</label>
+					<input class="input-field" type="password" name="password" required minlength="8"/>
+				</div>
+				if d.RefCode != "" {
+					<div>
+						<label class="mb-2 block text-xs font-medium uppercase tracking-wider text-dark-400">Реферальный код</label>
+						<input class="input-field" type="text" name="referral_code" value={ d.RefCode } readonly/>
+					</div>
+				} else {
+					<div>
+						<label class="mb-2 block text-xs font-medium uppercase tracking-wider text-dark-400">Реферальный код (необязательно)</label>
+						<input class="input-field" type="text" name="referral_code" placeholder="Если есть"/>
+					</div>
+				}
+				<div>
+					<label class="mb-2 block text-xs font-medium uppercase tracking-wider text-dark-400">Сколько будет { d.CaptchaQuestion }</label>
+					<input class="input-field" type="text" name="captcha_answer" inputmode="numeric" pattern="-?[0-9]+" required autocomplete="off"/>
+					<input type="hidden" name="captcha_token" value={ d.CaptchaToken }/>
+				</div>
+				<label class="flex items-start gap-2 text-xs text-dark-400">
+					<input type="checkbox" name="accept_terms" value="1" required class="mt-0.5"/>
+					<span>
+						Я принимаю
+						<a href="/terms" target="_blank" class="text-accent-400 underline">пользовательское соглашение</a>
+						и
+						<a href="/privacy" target="_blank" class="text-accent-400 underline">политику конфиденциальности</a>
+					</span>
+				</label>
+				<button class="btn-primary w-full" type="submit">Создать аккаунт</button>
+			</form>
+			<p class="text-center text-sm text-dark-400">
+				Уже есть аккаунт? <a href="/login" class="text-accent-400 hover:underline">Войти</a>
+			</p>
+		</div>
+	}
+}

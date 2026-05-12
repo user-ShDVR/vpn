@@ -1,0 +1,9 @@
+DROP TABLE IF EXISTS promo_redemptions;
+DROP TABLE IF EXISTS promo_codes;
+DROP TABLE IF EXISTS payments;
+DROP TABLE IF EXISTS transactions;
+DROP TABLE IF EXISTS referrals;
+DROP TABLE IF EXISTS servers;
+DROP TABLE IF EXISTS subscriptions;
+DROP TABLE IF EXISTS plans;
+DROP TABLE IF EXISTS users;

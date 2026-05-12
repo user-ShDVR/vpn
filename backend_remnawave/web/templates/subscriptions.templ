@@ -1,0 +1,120 @@
+package templates
+
+import (
+	"fmt"
+	"net/url"
+
+	"github.com/shdvr/vpn-backend/internal/db"
+)
+
+type SubscriptionsData struct {
+	Subscription *db.Subscription
+	Plan         *db.Plan
+	SubURL       string
+	QRPNGBase64  string
+	UsedBytes    int64
+	LimitBytes   int64
+}
+
+templ Subscriptions(d SubscriptionsData) {
+	@Layout("Подписка", "/subscriptions", true) {
+		<div class="space-y-6">
+			<div class="flex items-center gap-3">
+				<a href="/" class="flex h-10 w-10 items-center justify-center rounded-xl border border-dark-700 bg-dark-800">
+					<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"></path></svg>
+				</a>
+				<h1 class="text-2xl font-bold text-dark-50 sm:text-3xl">Подписка</h1>
+			</div>
+			if d.Subscription == nil {
+				<div class="glass rounded-3xl p-7">
+					<p class="text-sm text-dark-400">Нет активной подписки.</p>
+					<a href="/subscription/purchase" class="btn-primary mt-4 w-full">Выбрать тариф</a>
+				</div>
+			} else {
+				@SubCard(d)
+			}
+		</div>
+	}
+}
+
+templ SubCard(d SubscriptionsData) {
+	<div id="sub-card" class="glass-accent rounded-3xl p-7 space-y-5">
+		<div class="flex items-start justify-between gap-3">
+			<div>
+				<div class="badge-success">Активна</div>
+				<h2 class="mt-2 text-lg font-bold text-dark-50">{ d.Plan.Name }</h2>
+				<p class="mt-1 text-xs text-dark-400">До { d.Subscription.ExpiresAt.Format("02.01.2006") } · { daysLeftLabel(d.Subscription.ExpiresAt) }</p>
+			</div>
+			<div class="flex items-center gap-2">
+				<a href="/subscription/purchase" class="btn-secondary text-xs">Сменить тариф</a>
+				<form hx-post="/dashboard/rotate" hx-target="#sub-card" hx-swap="outerHTML" hx-confirm="Старая ссылка перестанет работать. Продолжить?">
+					<button class="btn-icon" type="submit" title="Сбросить ссылку">
+						<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992M2.985 19.644v-4.992h4.992m-4.992 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"></path></svg>
+					</button>
+				</form>
+			</div>
+		</div>
+		if d.SubURL != "" {
+			<div class="flex flex-col items-center gap-4 rounded-2xl bg-white/5 p-5">
+				<img src={ "data:image/png;base64," + d.QRPNGBase64 } alt="QR" class="rounded-xl bg-white p-2" width="220" height="220"/>
+				<div class="w-full">
+					<div class="mb-2 text-[10px] font-medium uppercase tracking-wider text-dark-50/35">Ссылка подписки</div>
+					<div class="flex gap-2">
+						<code id="sub-url" class="flex-1 overflow-x-auto rounded-xl bg-white/5 px-3 py-2 text-[11px] mono text-dark-50/70 break-all">{ d.SubURL }</code>
+						<button onclick="navigator.clipboard.writeText(document.getElementById('sub-url').innerText); this.innerText='OK'" class="btn-icon" title="Копировать">
+							<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"></path></svg>
+						</button>
+					</div>
+				</div>
+			</div>
+			<div>
+				<div class="mb-2 text-[10px] font-medium uppercase tracking-wider text-dark-50/35">Открыть в клиенте</div>
+				<div class="grid grid-cols-3 gap-2">
+					<a class="btn-secondary text-center" href={ templ.SafeURL("hiddify://install-config?url=" + url.QueryEscape(d.SubURL)) }>Hiddify</a>
+					<a class="btn-secondary text-center" href={ templ.SafeURL("v2raytun://import/" + url.QueryEscape(d.SubURL)) }>V2RayTun</a>
+					<a class="btn-secondary text-center" href={ templ.SafeURL("happ://add/" + url.QueryEscape(d.SubURL)) }>Happ</a>
+				</div>
+				<p class="mt-2 text-[11px] text-dark-500">Не работает кнопка? Скопируйте ссылку выше и вставьте в приложение вручную.</p>
+			</div>
+		} else {
+			<div class="rounded-2xl border border-warning-500/30 bg-warning-500/10 p-3 text-sm text-warning-400">
+				Ссылка подписки ещё не создана на сервере. Подождите минуту или обратитесь в поддержку.
+			</div>
+		}
+		if d.LimitBytes > 0 {
+			<div>
+				<div class="mb-2 flex items-center justify-between">
+					<div class="text-[10px] font-medium uppercase tracking-wider text-dark-50/35">Трафик</div>
+					<div class="text-[11px] mono text-dark-50/50">{ formatBytes(d.UsedBytes) } / { formatBytes(d.LimitBytes) }</div>
+				</div>
+				<div class="h-1.5 w-full rounded-full bg-white/5 overflow-hidden">
+					<div class="h-full bg-accent-400" style={ trafficBarStyle(d.UsedBytes, d.LimitBytes) }></div>
+				</div>
+			</div>
+		}
+	</div>
+}
+
+func trafficBarStyle(used, limit int64) string {
+	if limit <= 0 {
+		return "width:0%"
+	}
+	pct := used * 100 / limit
+	if pct > 100 {
+		pct = 100
+	}
+	return fmt.Sprintf("width:%d%%", pct)
+}
+
+func formatBytes(b int64) string {
+	const unit = 1024
+	if b < unit {
+		return fmt.Sprintf("%d B", b)
+	}
+	div, exp := int64(unit), 0
+	for n := b / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "KMGTPE"[exp])
+}

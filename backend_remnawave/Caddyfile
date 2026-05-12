@@ -1,0 +1,27 @@
+# Caddy auto-TLS via Let's Encrypt. Set DOMAIN+ACME_EMAIL in .env.
+# DOMAIN can be a single host (svyazok.ru) or comma-list ("svyazok.ru, www.svyazok.ru").
+
+{
+    email {$ACME_EMAIL}
+}
+
+www.{$DOMAIN} {
+    redir https://{$DOMAIN}{uri} permanent
+}
+
+{$DOMAIN} {
+    encode zstd gzip
+
+    header {
+        X-Content-Type-Options    "nosniff"
+        X-Frame-Options           "DENY"
+        Referrer-Policy           "strict-origin-when-cross-origin"
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        Permissions-Policy        "camera=(), microphone=(), geolocation=()"
+        -Server
+    }
+
+    reverse_proxy api:8080 {
+        header_up X-Real-IP {remote_host}
+    }
+}
