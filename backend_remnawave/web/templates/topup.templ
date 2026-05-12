@@ -3,24 +3,20 @@ package templates
 import "fmt"
 
 type TopupMethod struct {
-	Slug        string // "sbp", "cards", "crypto", "universal"
-	Name        string
-	Description string
-	IconKey     string // for SVG selection
-	Available   bool
+	Slug      string // "sbp", "crypto"
+	Name      string // already includes emoji
+	IconKey   string
+	Available bool
 }
 
-type TopupMethodSelectData struct {
-	Methods []TopupMethod
-	ErrMsg  string
-}
-
-type TopupAmountData struct {
-	Method        TopupMethod
+type TopupData struct {
+	Methods        []TopupMethod
+	SelectedSlug   string
 	BalanceKopecks int64
-	MinRub        int
-	Presets       []int // ruble amounts
-	ErrMsg        string
+	MinRub         int
+	MaxRub         int
+	Presets        []int
+	ErrMsg         string
 }
 
 type TopupResultData struct {
@@ -30,102 +26,89 @@ type TopupResultData struct {
 	Method        string
 }
 
-templ TopupMethodSelect(d TopupMethodSelectData) {
+templ Topup(d TopupData) {
 	@Layout("Пополнение", "/balance", true) {
-		<div class="space-y-bento-lg animate-fade-in">
-			<div class="flex items-center gap-3">
+		<div class="mx-auto max-w-lg space-y-5 animate-fade-in">
+			<div class="flex items-center gap-4 pb-1">
 				<a href="/balance" class="btn-icon" title="Назад">
 					<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
 				</a>
-				<div>
-					<div class="text-[11px] uppercase tracking-widest text-dark-500">Шаг 1 из 3</div>
-					<h1 class="h-display text-2xl text-dark-50 sm:text-3xl">Способ оплаты</h1>
+				<div class="flex h-14 w-14 items-center justify-center rounded-bento-sm bg-gradient-to-br from-accent-500/20 to-accent-600/20 text-accent-400">
+					<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/></svg>
+				</div>
+				<div class="flex-1">
+					<h1 class="h-display text-xl text-dark-50">Platega</h1>
+					<p class="text-sm text-dark-400">{ fmt.Sprintf("%d – %d ₽", d.MinRub, d.MaxRub) }</p>
 				</div>
 			</div>
-			if d.ErrMsg != "" {
-				<div class="bento-card-sm border-error-500/30 bg-error-500/10 text-sm text-error-400">{ d.ErrMsg }</div>
-			}
-			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-				for _, m := range d.Methods {
-					if m.Available {
-						<a href={ templ.SafeURL("/balance/topup/" + m.Slug) } class="bento-card-sm group hover-border-gradient transition" style="--border-duration: 4s;">
-							<div class="flex items-center gap-3">
-								<div class="flex h-11 w-11 items-center justify-center rounded-bento-sm bg-accent-500/10 text-accent-400">
-									@methodIcon(m.IconKey)
-								</div>
-								<div class="flex-1">
-									<div class="font-display font-semibold text-dark-100">{ m.Name }</div>
-									if m.Description != "" {
-										<div class="mt-0.5 text-xs text-dark-500">{ m.Description }</div>
-									}
-								</div>
-								<svg class="h-4 w-4 text-dark-500 transition group-hover:translate-x-1 group-hover:text-accent-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-							</div>
-						</a>
-					} else {
-						<div class="bento-card-sm opacity-50 cursor-not-allowed">
-							<div class="flex items-center gap-3">
-								<div class="flex h-11 w-11 items-center justify-center rounded-bento-sm bg-dark-800/50 text-dark-500">
-									@methodIcon(m.IconKey)
-								</div>
-								<div class="flex-1">
-									<div class="font-display font-semibold text-dark-300">{ m.Name }</div>
-									<div class="mt-0.5 text-xs text-dark-500">Скоро</div>
-								</div>
-							</div>
-						</div>
-					}
-				}
-			</div>
-		</div>
-	}
-}
 
-templ TopupAmount(d TopupAmountData) {
-	@Layout("Пополнение", "/balance", true) {
-		<div class="space-y-bento-lg animate-fade-in">
-			<div class="flex items-center gap-3">
-				<a href="/balance/topup" class="btn-icon" title="Назад">
-					<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
-				</a>
-				<div>
-					<div class="text-[11px] uppercase tracking-widest text-dark-500">Шаг 2 из 3</div>
-					<h1 class="h-display text-2xl text-dark-50 sm:text-3xl">Сумма пополнения</h1>
-				</div>
-			</div>
-			<div class="bento-card-accent">
-				<div class="flex items-center gap-3">
-					<div class="flex h-11 w-11 items-center justify-center rounded-bento-sm bg-accent-500/10 text-accent-400">
-						@methodIcon(d.Method.IconKey)
-					</div>
-					<div>
-						<div class="text-xs uppercase tracking-wider text-dark-500">Метод</div>
-						<div class="font-display text-base font-semibold text-dark-100">{ d.Method.Name }</div>
-					</div>
-				</div>
-			</div>
 			if d.ErrMsg != "" {
 				<div class="bento-card-sm border-error-500/30 bg-error-500/10 text-sm text-error-400">{ d.ErrMsg }</div>
 			}
-			<form method="post" action={ templ.SafeURL("/balance/topup/" + d.Method.Slug) } class="space-y-bento">
-				<div class="bento-card-sm space-y-4">
-					<label class="block">
-						<span class="text-xs uppercase tracking-wider text-dark-500">Сумма в ₽</span>
-						<input class="input-field mt-2 text-2xl font-bold text-center mono" type="number" name="amount_rub" min={ fmt.Sprintf("%d", d.MinRub) } step="1" placeholder={ fmt.Sprintf("От %d ₽", d.MinRub) } required autofocus/>
-					</label>
-					<div class="grid grid-cols-4 gap-2">
-						for _, p := range d.Presets {
-							<button type="button" class="btn-secondary text-sm" onclick={ presetClick(p) }>{ fmt.Sprintf("%d ₽", p) }</button>
+
+			<form id="topup-form" method="POST" action={ templ.SafeURL("/balance/topup/" + d.SelectedSlug) } class="space-y-5">
+				<div class="space-y-2">
+					<label class="text-sm font-medium text-dark-400">Способ оплаты</label>
+					<div class="grid grid-cols-2 gap-2">
+						for _, m := range d.Methods {
+							@methodButton(m, m.Slug == d.SelectedSlug)
 						}
 					</div>
 				</div>
-				<button class="btn-primary w-full py-4 text-base" type="submit">
-					Перейти к оплате
-					<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
-				</button>
+
+				<div class="space-y-2">
+					<label class="text-sm font-medium text-dark-400">Введите сумму</label>
+					<div class="flex gap-2">
+						<div class="relative flex-1 rounded-bento border border-dark-700/50 bg-dark-800/70 transition-colors focus-within:border-accent-400/60">
+							<input
+								name="amount_rub"
+								type="number"
+								inputmode="decimal"
+								enterkeyhint="done"
+								placeholder="0"
+								min={ fmt.Sprintf("%d", d.MinRub) }
+								max={ fmt.Sprintf("%d", d.MaxRub) }
+								step="1"
+								required
+								autocomplete="off"
+								autofocus
+								class="h-14 w-full bg-transparent px-4 pr-12 text-xl font-bold text-dark-100 placeholder:text-dark-600 focus:outline-none mono"
+							/>
+							<span class="absolute right-4 top-1/2 -translate-y-1/2 text-base font-semibold text-dark-500">₽</span>
+						</div>
+						<button type="submit" class="btn-primary flex h-14 shrink-0 items-center justify-center gap-2 rounded-bento px-6 text-base font-bold">
+							<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"/></svg>
+							<span>Пополнить</span>
+						</button>
+					</div>
+				</div>
+
+				<div class="grid grid-cols-4 gap-2">
+					for _, p := range d.Presets {
+						<button type="button" onclick={ presetClick(p) } class="flex flex-col items-center justify-center rounded-bento border border-dark-700/40 bg-dark-900/70 px-2 py-3 transition hover:scale-[1.01] hover:border-dark-600/50 hover:bg-dark-800/60 active:scale-[0.99]">
+							<span class="text-base font-bold text-dark-200 mono">{ fmt.Sprintf("%d", p) }</span>
+							<span class="mt-0.5 text-xs text-dark-500">₽</span>
+						</button>
+					}
+				</div>
+
 				<p class="text-center text-xs text-dark-500">Текущий баланс: <span class="mono text-dark-300">{ FormatRubles(d.BalanceKopecks) }</span></p>
 			</form>
 		</div>
+		@methodButtonScript()
+	}
+}
+
+templ methodButton(m TopupMethod, selected bool) {
+	if selected {
+		<button type="button" data-slug={ m.Slug } class="topup-method relative rounded-bento bg-accent-500/15 px-4 py-3 text-sm font-semibold text-accent-400 ring-2 ring-accent-500/40 transition" data-selected="1">
+			{ m.Name }
+			<span class="absolute right-1.5 top-1.5"><span class="block h-2 w-2 rounded-full bg-accent-500"></span></span>
+		</button>
+	} else {
+		<button type="button" data-slug={ m.Slug } class="topup-method relative rounded-bento border border-dark-700/50 bg-dark-800/70 px-4 py-3 text-sm font-semibold text-dark-300 transition hover:bg-dark-700/70">
+			{ m.Name }
+		</button>
 	}
 }
 
@@ -134,11 +117,36 @@ script presetClick(amount int) {
 	if (input) { input.value = amount; input.focus(); }
 }
 
+// methodButtonScript wires the method picker: click swaps the active button
+// and updates the form action so the submit POSTs to the right endpoint.
+script methodButtonScript() {
+	const form = document.getElementById('topup-form');
+	if (!form) return;
+	document.querySelectorAll('.topup-method').forEach(btn => {
+		btn.addEventListener('click', e => {
+			document.querySelectorAll('.topup-method').forEach(b => {
+				b.classList.remove('bg-accent-500/15','text-accent-400','ring-2','ring-accent-500/40');
+				b.classList.add('border','border-dark-700/50','bg-dark-800/70','text-dark-300');
+				const dot = b.querySelector('.dot-marker'); if (dot) dot.remove();
+				const inner = b.querySelector('.absolute'); if (inner) inner.remove();
+				b.removeAttribute('data-selected');
+			});
+			btn.classList.remove('border','border-dark-700/50','bg-dark-800/70','text-dark-300');
+			btn.classList.add('bg-accent-500/15','text-accent-400','ring-2','ring-accent-500/40');
+			btn.setAttribute('data-selected','1');
+			const dot = document.createElement('span');
+			dot.className = 'absolute right-1.5 top-1.5';
+			dot.innerHTML = '<span class="block h-2 w-2 rounded-full bg-accent-500"></span>';
+			btn.appendChild(dot);
+			form.setAttribute('action', '/balance/topup/' + btn.dataset.slug);
+		});
+	});
+}
+
 templ TopupResult(d TopupResultData) {
 	@Layout("Результат оплаты", "/balance", true) {
 		<div class="space-y-bento-lg animate-fade-in mx-auto max-w-md">
 			<div class="bento-card text-center">
-				<div class="text-[11px] uppercase tracking-widest text-dark-500 mb-2">Шаг 3 из 3</div>
 				if d.Success {
 					<div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-success-500/10 text-success-400 animate-scale-in">
 						<svg class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
@@ -169,20 +177,5 @@ templ TopupResult(d TopupResultData) {
 				}
 			</div>
 		</div>
-	}
-}
-
-templ methodIcon(key string) {
-	switch key {
-		case "sbp":
-			<svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L1 7v10c0 5 11 8 11 8s11-3 11-8V7l-11-5zm0 2.18L19 7.5v8.41c0 2.42-3.64 4.42-7 5.39-3.36-.97-7-2.97-7-5.39V7.5l7-3.32z"/><circle cx="12" cy="12" r="3"/></svg>
-		case "cards":
-			<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/></svg>
-		case "crypto":
-			<svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm-1.5 5h2v2h2.5a3.5 3.5 0 010 7H10v3h3.5a1.5 1.5 0 000-3H10v-2h3.5a3.5 3.5 0 003.479-3.124A3.5 3.5 0 0014.5 5H12.5V3h-2v2H7v2h3.5z"/></svg>
-		case "universal":
-			<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
-		default:
-			<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/></svg>
 	}
 }

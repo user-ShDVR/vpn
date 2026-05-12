@@ -134,9 +134,8 @@ func (h *Handler) Register(app *fiber.App) {
 	g.Get("/subscription/purchase", h.purchasePage)
 	g.Post("/subscription/purchase/:plan_id", h.buyPlanSubmit)
 	g.Get("/balance", h.balancePage)
-	g.Get("/balance/topup", h.topupMethodSelectPage)
+	g.Get("/balance/topup", h.topupPage)
 	g.Get("/balance/topup/result", h.topupResultPage)
-	g.Get("/balance/topup/:method", h.topupAmountPage)
 	g.Post("/balance/topup/:method", h.topupCreate)
 	g.Post("/admin/topup", h.adminTopupSubmit)
 	g.Get("/profile", h.profilePage)
@@ -869,10 +868,8 @@ func (h *Handler) balancePage(c *fiber.Ctx) error {
 //         GET  /balance/topup/result    → success/fail screen after Platega return
 
 var topupMethods = []templates.TopupMethod{
-	{Slug: "sbp", Name: "СБП", Description: "Быстрые платежи по QR", IconKey: "sbp", Available: true},
-	{Slug: "cards", Name: "Карты", Description: "Visa, Mastercard, МИР", IconKey: "cards", Available: true},
-	{Slug: "crypto", Name: "Криптовалюта", Description: "TON, USDT, BTC", IconKey: "crypto", Available: true},
-	{Slug: "universal", Name: "Все способы", Description: "Платега выберет за вас", IconKey: "universal", Available: true},
+	{Slug: "sbp", Name: "🏦 СБП (QR)", IconKey: "sbp", Available: true},
+	{Slug: "crypto", Name: "🪙 Криптовалюта", IconKey: "crypto", Available: true},
 }
 
 // plategaMethodID maps URL slugs to Platega numeric paymentMethod IDs.
@@ -902,33 +899,36 @@ func topupMethodBySlug(slug string) (templates.TopupMethod, bool) {
 	return templates.TopupMethod{}, false
 }
 
-func (h *Handler) topupMethodSelectPage(c *fiber.Ctx) error {
+func (h *Handler) topupPage(c *fiber.Ctx) error {
 	if h.platega == nil || !h.platega.Configured() {
 		return c.Redirect("/balance?err=no_provider", fiber.StatusFound)
-	}
-	return render(c, templates.TopupMethodSelect(templates.TopupMethodSelectData{
-		Methods: topupMethods,
-	}))
-}
-
-func (h *Handler) topupAmountPage(c *fiber.Ctx) error {
-	if h.platega == nil || !h.platega.Configured() {
-		return c.Redirect("/balance?err=no_provider", fiber.StatusFound)
-	}
-	method, ok := topupMethodBySlug(c.Params("method"))
-	if !ok {
-		return c.Redirect("/balance/topup", fiber.StatusFound)
 	}
 	userID := c.Locals("userID").(uuid.UUID)
 	user, err := h.db.GetUserByID(c.Context(), userID)
 	if err != nil {
 		return fiber.ErrNotFound
 	}
-	return render(c, templates.TopupAmount(templates.TopupAmountData{
-		Method:         method,
+	selected := c.Query("method")
+	if _, ok := topupMethodBySlug(selected); !ok {
+		selected = topupMethods[0].Slug
+	}
+	errMsg := ""
+	switch c.Query("err") {
+	case "amount":
+		errMsg = "Сумма должна быть от 100 до 1 000 000 ₽"
+	case "gateway":
+		errMsg = "Платежный шлюз недоступен. Попробуйте позже."
+	case "db":
+		errMsg = "Ошибка обработки. Попробуйте ещё раз."
+	}
+	return render(c, templates.Topup(templates.TopupData{
+		Methods:        topupMethods,
+		SelectedSlug:   selected,
 		BalanceKopecks: user.BalanceKopecks,
 		MinRub:         100,
-		Presets:        []int{300, 500, 1000, 3000},
+		MaxRub:         1000000,
+		Presets:        []int{100, 300, 500, 1000},
+		ErrMsg:         errMsg,
 	}))
 }
 
