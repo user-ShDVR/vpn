@@ -18,13 +18,18 @@ import (
 )
 
 type Service struct {
-	db *db.DB
-	rw *remnawave.Client
+	db                *db.DB
+	rw                *remnawave.Client
+	defaultSquadUUID  string
 }
 
 func New(database *db.DB, rw *remnawave.Client) *Service {
 	return &Service{db: database, rw: rw}
 }
+
+// SetDefaultSquadUUID makes every provisioned user a member of this squad
+// in addition to plan-specific squads. Empty disables the behaviour.
+func (s *Service) SetDefaultSquadUUID(u string) { s.defaultSquadUUID = strings.TrimSpace(u) }
 
 // Provision creates (or refreshes) the Remnawave user for the given subscription.
 // Returns the subscription URL the customer hands to their VPN client.
@@ -40,7 +45,7 @@ func (s *Service) Provision(ctx context.Context, user *db.User, sub *db.Subscrip
 		return "", fmt.Errorf("get plan: %w", err)
 	}
 
-	squads := planSquads(plan)
+	squads := s.composeSquads(plan)
 	trafficBytes := planTrafficBytes(plan)
 
 	if user.RemnawaveUUID != nil {
@@ -259,6 +264,23 @@ func planSquads(p *db.Plan) []string {
 		s = strings.TrimSpace(s)
 		if s != "" {
 			out = append(out, s)
+		}
+	}
+	return out
+}
+
+// composeSquads returns plan-specific squads plus the configured default
+// squad (deduped). Order: defaultSquadUUID first, then plan squads.
+func (s *Service) composeSquads(p *db.Plan) []string {
+	planSet := planSquads(p)
+	if s.defaultSquadUUID == "" {
+		return planSet
+	}
+	out := make([]string, 0, len(planSet)+1)
+	out = append(out, s.defaultSquadUUID)
+	for _, sq := range planSet {
+		if sq != s.defaultSquadUUID {
+			out = append(out, sq)
 		}
 	}
 	return out

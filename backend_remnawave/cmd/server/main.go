@@ -36,9 +36,10 @@ type Config struct {
 	PublicBaseURL  string
 	WebStaticPath  string
 
-	RemnawaveBaseURL        string
-	RemnawaveToken          string
+	RemnawaveBaseURL           string
+	RemnawaveToken             string
 	RemnawaveSubpageConfigUUID string
+	RemnawaveDefaultSquadUUID  string
 
 	PlategaBaseURL       string
 	PlategaMerchantID    string
@@ -75,6 +76,7 @@ func loadConfig() Config {
 		RemnawaveBaseURL:           getEnv("REMNAWAVE_BASE_URL", ""),
 		RemnawaveToken:             getEnv("REMNAWAVE_TOKEN", ""),
 		RemnawaveSubpageConfigUUID: getEnv("REMNAWAVE_SUBPAGE_CONFIG_UUID", ""),
+		RemnawaveDefaultSquadUUID:  getEnv("REMNAWAVE_DEFAULT_SQUAD_UUID", ""),
 
 		PlategaBaseURL:       getEnv("PLATEGA_BASE_URL", ""),
 		PlategaMerchantID:    getEnv("PLATEGA_MERCHANT_ID", ""),
@@ -169,6 +171,7 @@ func main() {
 	}
 
 	prov := provisioner.New(database, rw)
+	prov.SetDefaultSquadUUID(cfg.RemnawaveDefaultSquadUUID)
 	scheduler := subscription.NewScheduler(database, prov)
 	scheduler.Start()
 	defer scheduler.Stop()

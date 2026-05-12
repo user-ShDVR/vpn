@@ -10,15 +10,16 @@ import (
 )
 
 type SubscriptionsData struct {
-	Subscription *db.Subscription
-	Plan         *db.Plan
-	SubURL       string
-	UsedBytes    int64
-	LimitBytes   int64
+	Subscription  *db.Subscription
+	Plan          *db.Plan
+	SubURL        string
+	QRPNGBase64   string
+	UsedBytes     int64
+	LimitBytes    int64
 	ResetStrategy string
-	Squads       []remnawave.Squad
-	Devices      []remnawave.Device
-	DeviceLimit  int
+	Squads        []remnawave.Squad
+	Devices       []remnawave.Device
+	DeviceLimit   int
 }
 
 templ Subscriptions(d SubscriptionsData) {
@@ -76,16 +77,26 @@ templ SubCard(d SubscriptionsData) {
 			<svg class="h-5 w-5 text-dark-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
 		</a>
 		if d.SubURL != "" {
-			<div class="flex items-center gap-2 rounded-bento-sm bg-white/5 px-3 py-2.5">
-				<code id="sub-url" class="flex-1 overflow-x-auto text-[11px] mono text-dark-50/70 break-all">{ d.SubURL }</code>
-				<button onclick="navigator.clipboard.writeText(document.getElementById('sub-url').innerText); this.innerText='OK'; setTimeout(()=>{this.innerText='';}, 1500)" class="btn-icon shrink-0" title="Копировать">
-					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"></path></svg>
-				</button>
-				<form hx-post="/dashboard/rotate" hx-target="#sub-card" hx-swap="outerHTML" hx-confirm="Старая ссылка перестанет работать. Продолжить?" class="contents">
-					<button class="btn-icon shrink-0" type="submit" title="Сбросить ссылку">
-						<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992M2.985 19.644v-4.992h4.992m-4.992 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"></path></svg>
+			<div class="space-y-3 rounded-bento bg-white/5 p-5">
+				if d.QRPNGBase64 != "" {
+					<img src={ "data:image/png;base64," + d.QRPNGBase64 } alt="QR" class="mx-auto rounded-bento-sm bg-white p-2 shadow-soft" width="200" height="200"/>
+				}
+				<div class="space-y-2">
+					<div class="text-[10px] font-medium uppercase tracking-widest text-dark-50/35">Ссылка подписки</div>
+					<code id="sub-url" class="block overflow-x-auto rounded-bento-sm bg-dark-900/40 px-3 py-2 text-[11px] mono text-dark-50/70 break-all">{ d.SubURL }</code>
+				</div>
+				<div class="grid grid-cols-2 gap-2">
+					<button type="button" data-copy={ d.SubURL } onclick="navigator.clipboard.writeText(this.dataset.copy); const l=this.querySelector('span'); const t=l.textContent; l.textContent='Скопировано'; setTimeout(()=>{l.textContent=t;}, 1500);" class="btn-secondary justify-center text-sm">
+						<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"/></svg>
+						<span>Скопировать</span>
 					</button>
-				</form>
+					<form hx-post="/dashboard/rotate" hx-target="#sub-card" hx-swap="outerHTML" hx-confirm="Старая ссылка перестанет работать. Продолжить?">
+						<button class="btn-secondary w-full justify-center text-sm" type="submit">
+							<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992M2.985 19.644v-4.992h4.992m-4.992 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+							<span>Сбросить</span>
+						</button>
+					</form>
+				</div>
 			</div>
 		}
 		<div class="bento-card-sm space-y-2 border-error-500/20 bg-error-500/5">

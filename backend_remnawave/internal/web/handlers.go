@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"log"
@@ -24,6 +25,7 @@ import (
 	"github.com/shdvr/vpn-backend/internal/provisioner"
 	"github.com/shdvr/vpn-backend/internal/remnawave"
 	"github.com/shdvr/vpn-backend/web/templates"
+	"github.com/skip2/go-qrcode"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -510,9 +512,21 @@ func (h *Handler) subscriptionsPage(c *fiber.Ctx) error {
 	d := templates.SubscriptionsData{Subscription: sub, Plan: plan}
 	if sub != nil {
 		d.SubURL, _ = h.provisioner.GetSubscriptionURL(c.Context(), userID)
+		d.QRPNGBase64 = encodeQR(d.SubURL)
 		h.fillRemnawaveData(c.Context(), userID, &d)
 	}
 	return render(c, templates.Subscriptions(d))
+}
+
+func encodeQR(url string) string {
+	if url == "" {
+		return ""
+	}
+	png, err := qrcode.Encode(url, qrcode.Medium, 256)
+	if err != nil {
+		return ""
+	}
+	return base64.StdEncoding.EncodeToString(png)
 }
 
 // fillRemnawaveData populates traffic, reset strategy, squads, devices, and
@@ -693,7 +707,7 @@ func (h *Handler) rotateSubAndRender(c *fiber.Ctx) error {
 		return fiber.ErrInternalServerError
 	}
 	sub, plan := h.activeSubAndPlan(c.Context(), userID)
-	d := templates.SubscriptionsData{Subscription: sub, Plan: plan, SubURL: url}
+	d := templates.SubscriptionsData{Subscription: sub, Plan: plan, SubURL: url, QRPNGBase64: encodeQR(url)}
 	h.fillRemnawaveData(c.Context(), userID, &d)
 	return render(c, templates.SubCard(d))
 }
