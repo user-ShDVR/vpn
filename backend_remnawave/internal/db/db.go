@@ -125,16 +125,20 @@ type Referral struct {
 }
 
 type Plan struct {
-	ID             uuid.UUID      `db:"id" json:"id"`
-	Name           string         `db:"name" json:"name"`
-	DurationDays   int            `db:"duration_days" json:"duration_days"`
-	TrafficLimitGB *int           `db:"traffic_limit_gb" json:"traffic_limit_gb"`
-	MaxDevices     int            `db:"max_devices" json:"max_devices"`
-	CostKopecks    int64          `db:"cost_kopecks" json:"cost_kopecks"`
-	ServerCount    int            `db:"server_count" json:"server_count"`
-	SquadUUIDs     pq.StringArray `db:"squad_uuids" json:"squad_uuids"`
-	Description    string         `db:"description" json:"description"`
-	CreatedAt      time.Time      `db:"created_at" json:"created_at"`
+	ID                  uuid.UUID      `db:"id" json:"id"`
+	Name                string         `db:"name" json:"name"`
+	Icon                string         `db:"icon" json:"icon"`
+	DurationDays        int            `db:"duration_days" json:"duration_days"`
+	TrafficLimitGB      *int           `db:"traffic_limit_gb" json:"traffic_limit_gb"`
+	MaxDevices          int            `db:"max_devices" json:"max_devices"`
+	CostKopecks         int64          `db:"cost_kopecks" json:"cost_kopecks"`
+	ResetStrategy       string         `db:"reset_strategy" json:"reset_strategy"`
+	ExtraGBPriceKopecks int64          `db:"extra_gb_price_kopecks" json:"extra_gb_price_kopecks"`
+	Deprecated          bool           `db:"deprecated" json:"deprecated"`
+	ServerCount         int            `db:"server_count" json:"server_count"`
+	SquadUUIDs          pq.StringArray `db:"squad_uuids" json:"squad_uuids"`
+	Description         string         `db:"description" json:"description"`
+	CreatedAt           time.Time      `db:"created_at" json:"created_at"`
 }
 
 type Subscription struct {
@@ -278,10 +282,20 @@ func (d *DB) ClearPasswordResetToken(ctx context.Context, userID uuid.UUID) erro
 
 // --- Plans ---
 
+// ListPlans returns non-deprecated plans only. ActivateFreePlanIfNone and
+// admin views that need deprecated rows for FK display should use raw SQL.
 func (d *DB) ListPlans(ctx context.Context) ([]Plan, error) {
 	var plans []Plan
-	err := d.SelectContext(ctx, &plans, `SELECT * FROM plans ORDER BY duration_days`)
+	err := d.SelectContext(ctx, &plans, `SELECT * FROM plans WHERE deprecated = false ORDER BY cost_kopecks`)
 	return plans, err
+}
+
+// CreateExtraGBPurchase records a top-up of extra traffic for analytics.
+func (d *DB) CreateExtraGBPurchase(ctx context.Context, userID uuid.UUID, subID *uuid.UUID, gb int, costKopecks int64) error {
+	_, err := d.ExecContext(ctx,
+		`INSERT INTO extra_gb_purchases (user_id, subscription_id, gb, cost_kopecks) VALUES ($1, $2, $3, $4)`,
+		userID, subID, gb, costKopecks)
+	return err
 }
 
 func (d *DB) GetPlanByID(ctx context.Context, id uuid.UUID) (*Plan, error) {

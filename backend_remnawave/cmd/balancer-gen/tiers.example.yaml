@@ -1,0 +1,16 @@
+# Tier mapping for balancer-gen. Order = priority.
+# tier1 — primary, tightest RTT, balancer picks fastest.
+# tier2 — fallback when tier1 all over maxRTT.
+# tier3 — last resort before `direct`.
+#
+# Values = Remnawave node `name` (Settings → Nodes). Script resolves to UUID.
+
+tier1:
+  - nl-1
+  - de-1
+
+tier2:
+  - fi-1
+
+tier3:
+  - us-1

@@ -129,6 +129,7 @@ func (h *Handler) Register(app *fiber.App) {
 	g.Post("/subscriptions/refresh-traffic", h.refreshTraffic)
 	g.Post("/subscriptions/devices/delete-all", h.deleteAllDevices)
 	g.Post("/subscriptions/devices/:hwid/delete", h.deleteDevice)
+	g.Post("/subscriptions/buy-extra-gb", h.buyExtraGB)
 	g.Get("/connection", h.connectionPage)
 	g.Post("/dashboard/rotate", h.rotateSubAndRender)
 	g.Get("/subscription/purchase", h.purchasePage)
@@ -540,6 +541,24 @@ func (h *Handler) subscriptionsPage(c *fiber.Ctx) error {
 		d.QRPNGBase64 = encodeQR(d.SubURL)
 		h.fillRemnawaveData(c.Context(), userID, &d)
 	}
+	if user, err := h.db.GetUserByID(c.Context(), userID); err == nil {
+		d.BalanceKopecks = user.BalanceKopecks
+	}
+	if c.Query("gb_added") == "1" {
+		d.Notice = "Доп. трафик добавлен"
+	}
+	switch c.Query("err") {
+	case "balance":
+		d.ErrMsg = "Недостаточно средств на балансе"
+	case "gb_invalid":
+		d.ErrMsg = "Некорректное количество ГБ (1–1000)"
+	case "no_extra":
+		d.ErrMsg = "На вашем тарифе нельзя докупить трафик"
+	case "panel":
+		d.ErrMsg = "Не удалось обновить трафик на сервере. Деньги возвращены."
+	case "no_sub":
+		d.ErrMsg = "Нет активной подписки"
+	}
 	return render(c, templates.Subscriptions(d))
 }
 
@@ -601,6 +620,38 @@ func (h *Handler) deleteAllDevices(c *fiber.Ctx) error {
 		}
 	}
 	return h.renderDevicesCard(c, userID)
+}
+
+func (h *Handler) buyExtraGB(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(uuid.UUID)
+	gb, err := strconv.Atoi(c.FormValue("gb"))
+	if err != nil || gb <= 0 || gb > 1000 {
+		return c.Redirect("/subscriptions?err=gb_invalid", fiber.StatusFound)
+	}
+	sub, err := h.db.GetActiveSubscription(c.Context(), userID)
+	if err != nil || sub == nil {
+		return c.Redirect("/subscriptions?err=no_sub", fiber.StatusFound)
+	}
+	plan, err := h.db.GetPlanByID(c.Context(), sub.PlanID)
+	if err != nil || plan.ExtraGBPriceKopecks <= 0 {
+		return c.Redirect("/subscriptions?err=no_extra", fiber.StatusFound)
+	}
+	cost := int64(gb) * plan.ExtraGBPriceKopecks
+	if _, err := h.db.DebitBalance(c.Context(), userID, cost, "extra_gb", fmt.Sprintf("Доп. трафик %d ГБ", gb), &sub.ID); err != nil {
+		if errors.Is(err, db.ErrInsufficientBalance) {
+			return c.Redirect("/subscriptions?err=balance", fiber.StatusFound)
+		}
+		return c.Redirect("/subscriptions?err=debit", fiber.StatusFound)
+	}
+	extraBytes := int64(gb) * 1024 * 1024 * 1024
+	if err := h.provisioner.AddTraffic(c.Context(), userID, extraBytes); err != nil {
+		log.Printf("add traffic failed user=%s gb=%d: %v", userID, gb, err)
+		// Refund balance — provision failed.
+		_, _ = h.db.CreditBalance(c.Context(), userID, cost, "extra_gb_refund", "Возврат: доп. трафик не добавлен", &sub.ID)
+		return c.Redirect("/subscriptions?err=panel", fiber.StatusFound)
+	}
+	_ = h.db.CreateExtraGBPurchase(c.Context(), userID, &sub.ID, gb, cost)
+	return c.Redirect("/subscriptions?gb_added=1", fiber.StatusFound)
 }
 
 func (h *Handler) renderDevicesCard(c *fiber.Ctx, userID uuid.UUID) error {

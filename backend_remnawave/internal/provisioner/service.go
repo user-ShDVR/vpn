@@ -56,6 +56,7 @@ func (s *Service) Provision(ctx context.Context, user *db.User, sub *db.Subscrip
 			Status:               remnawave.StatusActive,
 			ExpireAt:             &sub.ExpiresAt,
 			TrafficLimitBytes:    &trafficBytes,
+			TrafficLimitStrategy: resetStrategyOrDefault(plan.ResetStrategy),
 			ActiveInternalSquads: squads,
 			HwidDeviceLimit:      &plan.MaxDevices,
 		}
@@ -77,7 +78,7 @@ func (s *Service) Provision(ctx context.Context, user *db.User, sub *db.Subscrip
 		Status:               remnawave.StatusActive,
 		ExpireAt:             sub.ExpiresAt,
 		TrafficLimitBytes:    trafficBytes,
-		TrafficLimitStrategy: remnawave.StrategyNoReset,
+		TrafficLimitStrategy: resetStrategyOrDefault(plan.ResetStrategy),
 		Email:                user.Email,
 		Description:          "СвязьOK · " + user.Email,
 		HwidDeviceLimit:      plan.MaxDevices,
@@ -269,6 +270,39 @@ func planSquads(p *db.Plan) []string {
 		}
 	}
 	return out
+}
+
+// resetStrategyOrDefault maps a Plan.ResetStrategy column value to the
+// Remnawave constant, falling back to NO_RESET on empty/unknown so we never
+// send an invalid string the panel will reject.
+func resetStrategyOrDefault(s string) string {
+	switch s {
+	case remnawave.StrategyDay, remnawave.StrategyWeek, remnawave.StrategyMonth, remnawave.StrategyMonthRolling:
+		return s
+	}
+	return remnawave.StrategyNoReset
+}
+
+// AddTraffic bumps the user's Remnawave trafficLimitBytes by extraBytes.
+// Used by the buy-extra-GB flow.
+func (s *Service) AddTraffic(ctx context.Context, userID uuid.UUID, extraBytes int64) error {
+	user, err := s.db.GetUserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if user.RemnawaveUUID == nil {
+		return fmt.Errorf("user has no remnawave link")
+	}
+	u, err := s.rw.GetUser(ctx, *user.RemnawaveUUID)
+	if err != nil {
+		return fmt.Errorf("get user: %w", err)
+	}
+	newLimit := u.TrafficLimitBytes + extraBytes
+	_, err = s.rw.UpdateUser(ctx, remnawave.UpdateUserRequest{
+		UUID:              *user.RemnawaveUUID,
+		TrafficLimitBytes: &newLimit,
+	})
+	return err
 }
 
 // composeSquads returns plan-specific squads plus the configured default
