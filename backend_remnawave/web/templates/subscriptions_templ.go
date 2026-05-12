@@ -57,12 +57,12 @@ func Subscriptions(d SubscriptionsData) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"space-y-6\"><div class=\"flex items-center gap-3\"><a href=\"/\" class=\"flex h-10 w-10 items-center justify-center rounded-xl border border-dark-700 bg-dark-800\"><svg class=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" stroke-width=\"2\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M15.75 19.5L8.25 12l7.5-7.5\"></path></svg></a><h1 class=\"text-2xl font-bold text-dark-50 sm:text-3xl\">Подписка</h1></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"space-y-bento-lg animate-fade-in\"><div class=\"flex items-center gap-3\"><a href=\"/\" class=\"btn-icon\" title=\"Назад\"><svg class=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" stroke-width=\"2\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M15.75 19.5L8.25 12l7.5-7.5\"></path></svg></a><div><div class=\"text-[11px] uppercase tracking-widest text-dark-500\">Подключение</div><h1 class=\"h-display text-2xl text-dark-50 sm:text-3xl\">Подписка</h1></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if d.Subscription == nil {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"glass rounded-3xl p-7\"><p class=\"text-sm text-dark-400\">Нет активной подписки.</p><a href=\"/subscription/purchase\" class=\"btn-primary mt-4 w-full\">Выбрать тариф</a></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"bento-card text-center\"><p class=\"text-sm text-dark-400\">Нет активной подписки.</p><a href=\"/subscription/purchase\" class=\"btn-primary mt-4 w-full\">Выбрать тариф</a></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -107,14 +107,14 @@ func SubCard(d SubscriptionsData) templ.Component {
 			templ_7745c5c3_Var3 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div id=\"sub-card\" class=\"glass-accent rounded-3xl p-7 space-y-5\"><div class=\"flex items-start justify-between gap-3\"><div><div class=\"badge-success\">Активна</div><h2 class=\"mt-2 text-lg font-bold text-dark-50\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div id=\"sub-card\" class=\"bento-card-accent space-y-5 animate-scale-in\"><div class=\"flex items-start justify-between gap-3\"><div><div class=\"badge-success\">Активна</div><h2 class=\"h-display mt-2 text-xl text-dark-50\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(d.Plan.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/subscriptions.templ`, Line: 45, Col: 65}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/subscriptions.templ`, Line: 48, Col: 65}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -127,7 +127,7 @@ func SubCard(d SubscriptionsData) templ.Component {
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(d.Subscription.ExpiresAt.Format("02.01.2006"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/subscriptions.templ`, Line: 46, Col: 94}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/subscriptions.templ`, Line: 49, Col: 94}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -140,7 +140,7 @@ func SubCard(d SubscriptionsData) templ.Component {
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(daysLeftLabel(d.Subscription.ExpiresAt))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/subscriptions.templ`, Line: 46, Col: 141}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/subscriptions.templ`, Line: 49, Col: 141}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -151,27 +151,27 @@ func SubCard(d SubscriptionsData) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if d.SubURL != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<div class=\"flex flex-col items-center gap-4 rounded-2xl bg-white/5 p-5\"><img src=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<div class=\"flex flex-col items-center gap-4 rounded-bento bg-white/5 p-5\"><img src=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs("data:image/png;base64," + d.QRPNGBase64)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/subscriptions.templ`, Line: 59, Col: 55}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/subscriptions.templ`, Line: 62, Col: 55}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "\" alt=\"QR\" class=\"rounded-xl bg-white p-2\" width=\"220\" height=\"220\"><div class=\"w-full\"><div class=\"mb-2 text-[10px] font-medium uppercase tracking-wider text-dark-50/35\">Ссылка подписки</div><div class=\"flex gap-2\"><code id=\"sub-url\" class=\"flex-1 overflow-x-auto rounded-xl bg-white/5 px-3 py-2 text-[11px] mono text-dark-50/70 break-all\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "\" alt=\"QR\" class=\"rounded-bento-sm bg-white p-2 shadow-soft\" width=\"220\" height=\"220\"><div class=\"w-full\"><div class=\"mb-2 text-[10px] font-medium uppercase tracking-widest text-dark-50/35\">Ссылка подписки</div><div class=\"flex gap-2\"><code id=\"sub-url\" class=\"flex-1 overflow-x-auto rounded-bento-sm bg-white/5 px-3 py-2 text-[11px] mono text-dark-50/70 break-all\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(d.SubURL)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/subscriptions.templ`, Line: 63, Col: 141}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/subscriptions.templ`, Line: 66, Col: 147}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 			if templ_7745c5c3_Err != nil {
@@ -184,7 +184,7 @@ func SubCard(d SubscriptionsData) templ.Component {
 			var templ_7745c5c3_Var9 templ.SafeURL
 			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("hiddify://install-config?url=" + url.QueryEscape(d.SubURL)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/subscriptions.templ`, Line: 73, Col: 123}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/subscriptions.templ`, Line: 76, Col: 123}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {
@@ -197,7 +197,7 @@ func SubCard(d SubscriptionsData) templ.Component {
 			var templ_7745c5c3_Var10 templ.SafeURL
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("v2raytun://import/" + url.QueryEscape(d.SubURL)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/subscriptions.templ`, Line: 74, Col: 112}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/subscriptions.templ`, Line: 77, Col: 112}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
@@ -210,7 +210,7 @@ func SubCard(d SubscriptionsData) templ.Component {
 			var templ_7745c5c3_Var11 templ.SafeURL
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("happ://add/" + url.QueryEscape(d.SubURL)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/subscriptions.templ`, Line: 75, Col: 105}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/subscriptions.templ`, Line: 78, Col: 105}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
@@ -234,7 +234,7 @@ func SubCard(d SubscriptionsData) templ.Component {
 			var templ_7745c5c3_Var12 string
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(formatBytes(d.UsedBytes))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/subscriptions.templ`, Line: 88, Col: 77}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/subscriptions.templ`, Line: 91, Col: 77}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
@@ -247,7 +247,7 @@ func SubCard(d SubscriptionsData) templ.Component {
 			var templ_7745c5c3_Var13 string
 			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(formatBytes(d.LimitBytes))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/subscriptions.templ`, Line: 88, Col: 109}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/subscriptions.templ`, Line: 91, Col: 109}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {
@@ -260,7 +260,7 @@ func SubCard(d SubscriptionsData) templ.Component {
 			var templ_7745c5c3_Var14 string
 			templ_7745c5c3_Var14, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(trafficBarStyle(d.UsedBytes, d.LimitBytes))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/subscriptions.templ`, Line: 91, Col: 89}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/subscriptions.templ`, Line: 94, Col: 89}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 			if templ_7745c5c3_Err != nil {

@@ -1,0 +1,28 @@
+node_modules/
+.env
+.env.local
+.env.*.local
+bin/
+/tmp/
+*.log
+
+# Tailwind build output
+web/static/dist.css
+web/static/dist.css.map
+
+# templ generated (regenerated on build)
+web/templates/*_templ.go
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Air live reload
+tmp/
+.air.toml
+
+# go test
+*.out
+coverage.txt

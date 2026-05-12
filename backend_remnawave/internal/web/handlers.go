@@ -123,13 +123,18 @@ func (h *Handler) Register(app *fiber.App) {
 	g.Get("/subscription/purchase", h.purchasePage)
 	g.Post("/subscription/purchase/:plan_id", h.buyPlanSubmit)
 	g.Get("/balance", h.balancePage)
-	g.Post("/balance/topup", h.userTopupSubmit)
+	g.Get("/balance/topup", h.topupMethodSelectPage)
+	g.Get("/balance/topup/result", h.topupResultPage)
+	g.Get("/balance/topup/:method", h.topupAmountPage)
+	g.Post("/balance/topup/:method", h.topupCreate)
 	g.Post("/admin/topup", h.adminTopupSubmit)
 	g.Get("/profile", h.profilePage)
 	g.Post("/profile/password", h.changePasswordSubmit)
 	g.Get("/referral", h.referralPage)
 	g.Get("/support", h.supportPage)
 	g.Get("/info", h.infoPage)
+	g.Get("/wheel", h.wheelPage)
+	g.Get("/gift", h.giftPage)
 }
 
 // --- Legal / support / info ---
@@ -642,14 +647,89 @@ func (h *Handler) balancePage(c *fiber.Ctx) error {
 	}))
 }
 
-func (h *Handler) userTopupSubmit(c *fiber.Ctx) error {
+// --- Top-up: 3-step flow ---
+//
+// Step 1: GET  /balance/topup           → list of methods (СБП/Карты/Crypto/Universal)
+// Step 2: GET  /balance/topup/:method   → amount form for selected method
+// Step 3: POST /balance/topup/:method   → creates Platega invoice, redirects to pay
+//         GET  /balance/topup/result    → success/fail screen after Platega return
+
+var topupMethods = []templates.TopupMethod{
+	{Slug: "sbp", Name: "СБП", Description: "Быстрые платежи по QR", IconKey: "sbp", Available: true},
+	{Slug: "cards", Name: "Карты", Description: "Visa, Mastercard, МИР", IconKey: "cards", Available: true},
+	{Slug: "crypto", Name: "Криптовалюта", Description: "TON, USDT, BTC", IconKey: "crypto", Available: true},
+	{Slug: "universal", Name: "Все способы", Description: "Платега выберет за вас", IconKey: "universal", Available: true},
+}
+
+// plategaMethodID maps URL slugs to Platega numeric paymentMethod IDs.
+// 0 = universal (v2 endpoint, Platega's own picker).
+func plategaMethodID(slug string) int {
+	switch slug {
+	case "sbp":
+		return 2
+	case "erip":
+		return 3
+	case "cards":
+		return 11
+	case "intl":
+		return 12
+	case "crypto":
+		return 13
+	}
+	return 0
+}
+
+func topupMethodBySlug(slug string) (templates.TopupMethod, bool) {
+	for _, m := range topupMethods {
+		if m.Slug == slug {
+			return m, true
+		}
+	}
+	return templates.TopupMethod{}, false
+}
+
+func (h *Handler) topupMethodSelectPage(c *fiber.Ctx) error {
 	if h.platega == nil || !h.platega.Configured() {
 		return c.Redirect("/balance?err=no_provider", fiber.StatusFound)
+	}
+	return render(c, templates.TopupMethodSelect(templates.TopupMethodSelectData{
+		Methods: topupMethods,
+	}))
+}
+
+func (h *Handler) topupAmountPage(c *fiber.Ctx) error {
+	if h.platega == nil || !h.platega.Configured() {
+		return c.Redirect("/balance?err=no_provider", fiber.StatusFound)
+	}
+	method, ok := topupMethodBySlug(c.Params("method"))
+	if !ok {
+		return c.Redirect("/balance/topup", fiber.StatusFound)
+	}
+	userID := c.Locals("userID").(uuid.UUID)
+	user, err := h.db.GetUserByID(c.Context(), userID)
+	if err != nil {
+		return fiber.ErrNotFound
+	}
+	return render(c, templates.TopupAmount(templates.TopupAmountData{
+		Method:         method,
+		BalanceKopecks: user.BalanceKopecks,
+		MinRub:         100,
+		Presets:        []int{300, 500, 1000, 3000},
+	}))
+}
+
+func (h *Handler) topupCreate(c *fiber.Ctx) error {
+	if h.platega == nil || !h.platega.Configured() {
+		return c.Redirect("/balance?err=no_provider", fiber.StatusFound)
+	}
+	method, ok := topupMethodBySlug(c.Params("method"))
+	if !ok {
+		return c.Redirect("/balance/topup", fiber.StatusFound)
 	}
 	userID := c.Locals("userID").(uuid.UUID)
 	rub, err := strconv.ParseFloat(c.FormValue("amount_rub"), 64)
 	if err != nil || rub < 100 {
-		return c.Redirect("/balance?err=amount", fiber.StatusFound)
+		return c.Redirect("/balance/topup/"+method.Slug+"?err=amount", fiber.StatusFound)
 	}
 	amountKopecks := int64(rub * 100)
 	user, err := h.db.GetUserByID(c.Context(), userID)
@@ -662,7 +742,7 @@ func (h *Handler) userTopupSubmit(c *fiber.Ctx) error {
 		AmountKopecks: amountKopecks, Currency: "RUB", Status: "pending",
 	})
 	if err != nil {
-		return c.Redirect("/balance?err=db", fiber.StatusFound)
+		return c.Redirect("/balance/topup/"+method.Slug+"?err=db", fiber.StatusFound)
 	}
 
 	returnURL := h.plategaReturnURL
@@ -678,20 +758,48 @@ func (h *Handler) userTopupSubmit(c *fiber.Ctx) error {
 		failURL = appendQuery(failURL, "invoice", pmt.ID.String())
 	}
 
-	resp, err := h.platega.CreatePayment(c.Context(),
+	resp, err := h.platega.CreatePaymentWithMethod(c.Context(),
 		rub,
 		fmt.Sprintf("Top-up balance for %s", user.Email),
 		returnURL, failURL, pmt.ID.String(),
+		plategaMethodID(method.Slug),
 	)
 	if err != nil {
 		log.Printf("platega create: %v", err)
 		_ = h.db.UpdatePaymentStatus(c.Context(), pmt.ID, "fail", false)
-		return c.Redirect("/balance?err=gateway", fiber.StatusFound)
+		return c.Redirect("/balance/topup/"+method.Slug+"?err=gateway", fiber.StatusFound)
 	}
 	if err := h.db.SetPaymentBillID(c.Context(), pmt.ID, resp.ID, resp.PayURL()); err != nil {
-		return c.Redirect("/balance?err=db", fiber.StatusFound)
+		return c.Redirect("/balance/topup/"+method.Slug+"?err=db", fiber.StatusFound)
 	}
 	return c.Redirect(resp.PayURL(), fiber.StatusFound)
+}
+
+func (h *Handler) topupResultPage(c *fiber.Ctx) error {
+	d := templates.TopupResultData{
+		Success: c.Query("status") == "success",
+	}
+	if invoiceStr := c.Query("invoice"); invoiceStr != "" {
+		if id, err := uuid.Parse(invoiceStr); err == nil {
+			if pmt, err := h.db.GetPaymentByID(c.Context(), id); err == nil {
+				d.BillID = pmt.BillID
+				if pmt.Status == "success" {
+					d.Success = true
+					d.AmountKopecks = pmt.AmountKopecks
+				}
+			}
+		}
+	}
+	return render(c, templates.TopupResult(d))
+}
+
+func (h *Handler) wheelPage(c *fiber.Ctx) error {
+	return render(c, templates.Wheel())
+}
+
+func (h *Handler) giftPage(c *fiber.Ctx) error {
+	plans, _ := h.db.ListPlans(c.Context())
+	return render(c, templates.Gift(templates.GiftData{Plans: plans}))
 }
 
 // plategaReturn is hit by the browser when Platega redirects the user back.

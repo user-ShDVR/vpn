@@ -1,0 +1,54 @@
+package templates
+
+import "github.com/shdvr/vpn-backend/internal/db"
+
+type GiftData struct {
+	Plans []db.Plan
+}
+
+templ Gift(d GiftData) {
+	@Layout("Подарок", "/", true) {
+		<div class="space-y-bento-lg animate-fade-in mx-auto max-w-md">
+			<div class="flex items-center gap-3">
+				<a href="/" class="btn-icon" title="Назад">
+					<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
+				</a>
+				<div>
+					<div class="text-[11px] uppercase tracking-widest text-dark-500">Подарок</div>
+					<h1 class="h-display text-2xl text-dark-50 sm:text-3xl">Подарить подписку</h1>
+				</div>
+			</div>
+			<div class="bento-card-accent text-center">
+				<div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-accent-500/10 text-accent-400">
+					<svg class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/></svg>
+				</div>
+				<h2 class="h-display mt-4 text-xl text-dark-50">Скоро в кабинете</h2>
+				<p class="mt-2 text-sm text-dark-400">Купи подписку и отправь её другу по ссылке. Он активирует одним кликом.</p>
+			</div>
+			<form class="space-y-bento" onsubmit="event.preventDefault(); return false;">
+				<div class="bento-card-sm space-y-3">
+					<label class="block">
+						<span class="text-xs uppercase tracking-wider text-dark-500">Email получателя</span>
+						<input class="input-field mt-2" type="email" placeholder="friend@example.com" disabled/>
+					</label>
+					<label class="block">
+						<span class="text-xs uppercase tracking-wider text-dark-500">Тариф</span>
+						<select class="input-field mt-2" disabled>
+							<option>— Скоро —</option>
+							for _, p := range d.Plans {
+								<option>{ p.Name }</option>
+							}
+						</select>
+					</label>
+					<label class="block">
+						<span class="text-xs uppercase tracking-wider text-dark-500">Сообщение (необязательно)</span>
+						<textarea class="input-field mt-2" rows="2" placeholder="С днём рождения!" disabled></textarea>
+					</label>
+				</div>
+				<button class="btn-primary w-full" disabled>
+					Подарить (скоро)
+				</button>
+			</form>
+		</div>
+	}
+}

@@ -102,12 +102,19 @@ type Transaction struct {
 	Raw     json.RawMessage
 }
 
-// CreatePayment creates a hosted payment on Platega and returns the redirect
-// URL the user should be sent to. `description` is truncated to 64 bytes (UTF-8
-// safe). Picks v2 multi-method endpoint when paymentMethod is 0.
+// CreatePayment creates a hosted payment on Platega using the client's default
+// paymentMethod. Convenience wrapper around CreatePaymentWithMethod.
 func (c *Client) CreatePayment(ctx context.Context, amountRubles float64, description, returnURL, failedURL, payload string) (*CreatePaymentResponse, error) {
+	return c.CreatePaymentWithMethod(ctx, amountRubles, description, returnURL, failedURL, payload, c.paymentMethod)
+}
+
+// CreatePaymentWithMethod creates a hosted payment with an explicit Platega
+// paymentMethod ID for this request. method == 0 triggers v2 multi-method
+// endpoint (universal picker on Platega's side). `description` is truncated
+// to 64 bytes (UTF-8 safe).
+func (c *Client) CreatePaymentWithMethod(ctx context.Context, amountRubles float64, description, returnURL, failedURL, payload string, method int) (*CreatePaymentResponse, error) {
 	body := CreatePaymentRequest{
-		PaymentMethod:  c.paymentMethod,
+		PaymentMethod:  method,
 		PaymentDetails: PaymentDetails{Amount: amountRubles, Currency: "RUB"},
 		Description:    truncateBytes(description, 64),
 		Return:         returnURL,
@@ -115,7 +122,7 @@ func (c *Client) CreatePayment(ctx context.Context, amountRubles float64, descri
 		Payload:        payload,
 	}
 	endpoint := "/transaction/process"
-	if c.paymentMethod == 0 {
+	if method == 0 {
 		endpoint = "/v2/transaction/process"
 	}
 	var resp CreatePaymentResponse

@@ -54,20 +54,20 @@ func Balance(d BalanceData) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"space-y-6\"><h1 class=\"text-2xl font-bold text-dark-50 sm:text-3xl\">Баланс</h1>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"space-y-bento-lg animate-fade-in\"><div><div class=\"text-[11px] uppercase tracking-widest text-dark-500 mb-1\">Кошелёк</div><h1 class=\"h-display text-3xl text-dark-50 sm:text-4xl\">Баланс</h1></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if d.Notice != "" {
 				if d.NoticeOK {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"rounded-2xl border border-success-500/30 bg-success-500/10 p-3 text-sm text-success-400\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"bento-card-sm border-success-500/30 bg-success-500/10 text-sm text-success-400\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var3 string
 					templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(d.Notice)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/balance.templ`, Line: 22, Col: 116}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/balance.templ`, Line: 25, Col: 107}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 					if templ_7745c5c3_Err != nil {
@@ -78,14 +78,14 @@ func Balance(d BalanceData) templ.Component {
 						return templ_7745c5c3_Err
 					}
 				} else {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"rounded-2xl border border-error-500/30 bg-error-500/10 p-3 text-sm text-error-400\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"bento-card-sm border-error-500/30 bg-error-500/10 text-sm text-error-400\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var4 string
 					templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(d.Notice)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/balance.templ`, Line: 24, Col: 110}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/balance.templ`, Line: 27, Col: 101}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 					if templ_7745c5c3_Err != nil {
@@ -97,14 +97,14 @@ func Balance(d BalanceData) templ.Component {
 					}
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div class=\"glass rounded-3xl p-7 text-center\"><div class=\"text-xs uppercase tracking-wider text-dark-400\">Текущий баланс</div><div class=\"mt-2 text-4xl font-bold text-accent-400 mono\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div class=\"bento-card-accent\"><div class=\"text-[11px] uppercase tracking-widest text-dark-50/40\">Доступно</div><div class=\"mt-2 h-display text-5xl text-accent-400 mono\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(FormatRubles(d.BalanceKopecks))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/balance.templ`, Line: 29, Col: 94}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/balance.templ`, Line: 32, Col: 94}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
@@ -115,12 +115,12 @@ func Balance(d BalanceData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			if d.PaymentEnabled {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<form method=\"post\" action=\"/balance/topup\" class=\"mt-5 flex gap-2\"><input class=\"input-field flex-1\" type=\"number\" name=\"amount_rub\" min=\"100\" step=\"1\" placeholder=\"Сумма в ₽ (от 100)\" required> <button class=\"btn-primary\" type=\"submit\">Пополнить</button></form><p class=\"mt-2 text-xs text-dark-500\">Оплата через Platega · карты, СБП</p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<a href=\"/balance/topup\" class=\"btn-primary mt-6 w-full\"><svg class=\"h-4 w-4\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" stroke-width=\"2\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M12 4.5v15m7.5-7.5h-15\"></path></svg> Пополнить</a>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			} else {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<p class=\"mt-3 text-sm text-dark-500\">Платёжный шлюз не настроен. Свяжитесь с поддержкой.</p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<div class=\"mt-5 text-sm text-dark-500\">Платёжный шлюз пока недоступен. Свяжитесь с поддержкой.</div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -130,17 +130,17 @@ func Balance(d BalanceData) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			if d.IsAdmin {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<div class=\"glass rounded-2xl p-5\"><div class=\"mb-3 text-xs uppercase tracking-wider text-warning-400\">Admin: пополнение баланса</div><form method=\"post\" action=\"/admin/topup\" class=\"grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_auto]\"><input class=\"input-field\" type=\"text\" name=\"user_id\" placeholder=\"user_id (UUID)\" required> <input class=\"input-field w-32\" type=\"number\" name=\"amount_kopecks\" placeholder=\"копейки\" required> <button class=\"btn-primary\" type=\"submit\">Кредит</button></form></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<div class=\"bento-card-sm border-warning-500/30\"><div class=\"mb-3 text-xs uppercase tracking-wider text-warning-400\">Admin · ручное пополнение</div><form method=\"post\" action=\"/admin/topup\" class=\"grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_auto]\"><input class=\"input-field\" type=\"text\" name=\"user_id\" placeholder=\"user_id (UUID)\" required> <input class=\"input-field w-32\" type=\"number\" name=\"amount_kopecks\" placeholder=\"копейки\" required> <button class=\"btn-primary\" type=\"submit\">Кредит</button></form></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<div><h2 class=\"mb-3 text-sm font-semibold uppercase tracking-wider text-dark-400\">История</h2>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<div><h2 class=\"mb-3 text-xs font-semibold uppercase tracking-widest text-dark-500\">История</h2>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if len(d.Transactions) == 0 {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<div class=\"glass rounded-2xl p-5 text-center text-sm text-dark-500\">Транзакций пока нет</div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<div class=\"bento-card-sm text-center text-sm text-dark-500\">Транзакций пока нет</div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -150,14 +150,14 @@ func Balance(d BalanceData) templ.Component {
 					return templ_7745c5c3_Err
 				}
 				for _, tx := range d.Transactions {
-					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<div class=\"glass rounded-xl p-3 flex items-center justify-between\"><div><div class=\"text-sm font-medium text-dark-100\">")
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<div class=\"bento-card-sm flex items-center justify-between py-3\" style=\"padding-top: 14px; padding-bottom: 14px;\"><div><div class=\"text-sm font-medium text-dark-100\">")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 					var templ_7745c5c3_Var6 string
 					templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(txTypeLabel(tx.Type))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/balance.templ`, Line: 59, Col: 78}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/balance.templ`, Line: 61, Col: 78}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 					if templ_7745c5c3_Err != nil {
@@ -170,7 +170,7 @@ func Balance(d BalanceData) templ.Component {
 					var templ_7745c5c3_Var7 string
 					templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(tx.CreatedAt.Format("02.01.2006 15:04"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/balance.templ`, Line: 60, Col: 85}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/balance.templ`, Line: 62, Col: 85}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 					if templ_7745c5c3_Err != nil {
@@ -205,7 +205,7 @@ func Balance(d BalanceData) templ.Component {
 					var templ_7745c5c3_Var10 string
 					templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(txAmountLabel(tx.AmountKopecks))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/balance.templ`, Line: 63, Col: 42}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/balance.templ`, Line: 65, Col: 42}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 					if templ_7745c5c3_Err != nil {

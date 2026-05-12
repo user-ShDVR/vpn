@@ -1,0 +1,16 @@
+node_modules
+.git
+.env
+.env.local
+*.log
+bin/
+/tmp
+web/static/dist.css.map
+web/templates/*_templ.go
+.air.toml
+.vscode
+.idea
+README.md
+CHANGELOG.md
+API_FLOW.md
+infra/scripts
