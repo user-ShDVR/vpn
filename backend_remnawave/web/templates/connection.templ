@@ -161,14 +161,14 @@ templ blockButton(d ConnectionData, btn remnawave.Button) {
 }
 
 templ iconTile(d ConnectionData, key, color string) {
-	<div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-bento-sm bg-accent-500/10 text-accent-400 [&_svg]:h-6 [&_svg]:w-6">
+	<div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-bento-sm bg-accent-500/10 text-accent-400">
 		@svgInline(d, key, "h-6 w-6")
 	</div>
 }
 
 templ svgInline(d ConnectionData, key, class string) {
 	if raw := svgRaw(d.SvgLibrary, key); raw != "" {
-		<span class={ class }>
+		<span class={ "inline-flex shrink-0 items-center justify-center overflow-hidden [&>svg]:h-full [&>svg]:w-full " + class }>
 			@templ.Raw(raw)
 		</span>
 	}

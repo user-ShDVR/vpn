@@ -82,7 +82,7 @@ func Purchase(d PurchaseData) templ.Component {
 				var templ_7745c5c3_Var3 string
 				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(d.ErrMsg)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `backend_remnawave/web/templates/purchase.templ`, Line: 33, Col: 109}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/purchase.templ`, Line: 33, Col: 109}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {
@@ -101,7 +101,7 @@ func Purchase(d PurchaseData) templ.Component {
 				var templ_7745c5c3_Var4 string
 				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(d.CurrentPlan.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `backend_remnawave/web/templates/purchase.templ`, Line: 37, Col: 54}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/purchase.templ`, Line: 37, Col: 54}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 				if templ_7745c5c3_Err != nil {
@@ -114,7 +114,7 @@ func Purchase(d PurchaseData) templ.Component {
 				var templ_7745c5c3_Var5 string
 				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(d.CurrentSub.ExpiresAt.Format("02.01.2006"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `backend_remnawave/web/templates/purchase.templ`, Line: 37, Col: 111}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/purchase.templ`, Line: 37, Col: 111}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 				if templ_7745c5c3_Err != nil {
@@ -132,7 +132,7 @@ func Purchase(d PurchaseData) templ.Component {
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(FormatRubles(d.BalanceKopecks))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `backend_remnawave/web/templates/purchase.templ`, Line: 43, Col: 94}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/purchase.templ`, Line: 43, Col: 94}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -195,7 +195,7 @@ func PlanCard(p db.Plan, balance int64, current *db.Plan) templ.Component {
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var8).String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `backend_remnawave/web/templates/purchase.templ`, Line: 1, Col: 0}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/purchase.templ`, Line: 1, Col: 0}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
@@ -208,7 +208,7 @@ func PlanCard(p db.Plan, balance int64, current *db.Plan) templ.Component {
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(p.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `backend_remnawave/web/templates/purchase.templ`, Line: 59, Col: 59}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/purchase.templ`, Line: 59, Col: 59}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
@@ -231,7 +231,7 @@ func PlanCard(p db.Plan, balance int64, current *db.Plan) templ.Component {
 			var templ_7745c5c3_Var11 string
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d дн.", p.DurationDays))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `backend_remnawave/web/templates/purchase.templ`, Line: 63, Col: 100}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/purchase.templ`, Line: 63, Col: 100}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
@@ -254,7 +254,7 @@ func PlanCard(p db.Plan, balance int64, current *db.Plan) templ.Component {
 			var templ_7745c5c3_Var12 string
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(p.Description)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `backend_remnawave/web/templates/purchase.templ`, Line: 67, Col: 76}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/purchase.templ`, Line: 67, Col: 76}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
@@ -272,7 +272,7 @@ func PlanCard(p db.Plan, balance int64, current *db.Plan) templ.Component {
 		var templ_7745c5c3_Var13 string
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(trafficLabel(p.TrafficLimitGB))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `backend_remnawave/web/templates/purchase.templ`, Line: 70, Col: 41}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/purchase.templ`, Line: 70, Col: 41}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
@@ -285,7 +285,7 @@ func PlanCard(p db.Plan, balance int64, current *db.Plan) templ.Component {
 		var templ_7745c5c3_Var14 string
 		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d устр.", p.MaxDevices))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `backend_remnawave/web/templates/purchase.templ`, Line: 71, Col: 55}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/purchase.templ`, Line: 71, Col: 55}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 		if templ_7745c5c3_Err != nil {
@@ -298,7 +298,7 @@ func PlanCard(p db.Plan, balance int64, current *db.Plan) templ.Component {
 		var templ_7745c5c3_Var15 string
 		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(serverCountLabel(p.ServerCount))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `backend_remnawave/web/templates/purchase.templ`, Line: 72, Col: 45}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/purchase.templ`, Line: 72, Col: 45}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {
@@ -319,7 +319,7 @@ func PlanCard(p db.Plan, balance int64, current *db.Plan) templ.Component {
 		var templ_7745c5c3_Var16 templ.SafeURL
 		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL("/subscription/purchase/" + p.ID.String()))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `backend_remnawave/web/templates/purchase.templ`, Line: 74, Col: 87}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/purchase.templ`, Line: 74, Col: 87}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 		if templ_7745c5c3_Err != nil {
@@ -341,7 +341,7 @@ func PlanCard(p db.Plan, balance int64, current *db.Plan) templ.Component {
 		var templ_7745c5c3_Var18 string
 		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(FormatRubles(p.CostKopecks))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `backend_remnawave/web/templates/purchase.templ`, Line: 77, Col: 85}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/purchase.templ`, Line: 77, Col: 85}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 		if templ_7745c5c3_Err != nil {
@@ -359,7 +359,7 @@ func PlanCard(p db.Plan, balance int64, current *db.Plan) templ.Component {
 			var templ_7745c5c3_Var19 string
 			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(buyButtonLabel(p, current))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `backend_remnawave/web/templates/purchase.templ`, Line: 79, Col: 83}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/purchase.templ`, Line: 79, Col: 83}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 			if templ_7745c5c3_Err != nil {
