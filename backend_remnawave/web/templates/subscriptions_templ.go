@@ -531,7 +531,7 @@ func ExtraGBCard(d SubscriptionsData) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var23 string
-		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(extraGBPriceLabel(d.Plan.ExtraGBPriceKopecks))
+		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(FormatRubles(d.Plan.ExtraGBPriceKopecks * 10))
 		if templ_7745c5c3_Err != nil {
 			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/subscriptions.templ`, Line: 174, Col: 90}
 		}
@@ -539,7 +539,7 @@ func ExtraGBCard(d SubscriptionsData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, " / ГБ</div></div><div class=\"text-right text-[11px] text-dark-500\">Баланс<br><span class=\"mono text-dark-300\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, " за 10 ГБ</div></div><div class=\"text-right text-[11px] text-dark-500\">Баланс<br><span class=\"mono text-dark-300\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -552,11 +552,11 @@ func ExtraGBCard(d SubscriptionsData) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "</span></div></div><form method=\"post\" action=\"/subscriptions/buy-extra-gb\" class=\"space-y-2\"><div class=\"flex gap-2\"><div class=\"relative flex-1 overflow-hidden rounded-bento-sm border border-dark-700/50 bg-dark-800/70 focus-within:border-accent-400/60\"><input id=\"extra-gb-input\" name=\"gb\" type=\"number\" inputmode=\"numeric\" min=\"1\" max=\"1000\" step=\"1\" required placeholder=\"0\" oninput=\"updateExtraGBPrice(this.value)\" class=\"h-12 w-full rounded-bento-sm bg-transparent px-4 pr-10 text-lg font-bold text-dark-100 placeholder:text-dark-600 focus:outline-none mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none\"> <span class=\"pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-dark-500\">ГБ</span></div><button type=\"submit\" class=\"btn-primary flex h-12 shrink-0 items-center justify-center gap-2 rounded-bento-sm px-5 text-sm font-bold\"><span>Купить</span> <span id=\"extra-gb-total\" class=\"mono text-[11px] opacity-80\"></span></button></div><div class=\"grid grid-cols-4 gap-2\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "</span></div></div><form method=\"post\" action=\"/subscriptions/buy-extra-gb\" class=\"space-y-2\"><div class=\"flex gap-2\"><div class=\"relative flex-1 overflow-hidden rounded-bento-sm border border-dark-700/50 bg-dark-800/70 focus-within:border-accent-400/60\"><input id=\"extra-gb-input\" name=\"gb\" type=\"number\" inputmode=\"numeric\" min=\"10\" max=\"1000\" step=\"10\" required placeholder=\"10\" oninput=\"updateExtraGBPrice(this.value)\" class=\"h-12 w-full rounded-bento-sm bg-transparent px-4 pr-10 text-lg font-bold text-dark-100 placeholder:text-dark-600 focus:outline-none mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none\"> <span class=\"pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-dark-500\">ГБ</span></div><button type=\"submit\" class=\"btn-primary flex h-12 shrink-0 items-center justify-center gap-2 rounded-bento-sm px-5 text-sm font-bold\"><span>Купить</span> <span id=\"extra-gb-total\" class=\"mono text-[11px] opacity-80\"></span></button></div><div class=\"grid grid-cols-4 gap-2\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		for _, p := range []int{10, 30, 50, 100} {
+		for _, p := range []int{10, 20, 50, 100} {
 			templ_7745c5c3_Err = templ.RenderScriptItems(ctx, templ_7745c5c3_Buffer, extraGBPreset(p))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err

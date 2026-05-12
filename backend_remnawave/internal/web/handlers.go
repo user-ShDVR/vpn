@@ -551,7 +551,7 @@ func (h *Handler) subscriptionsPage(c *fiber.Ctx) error {
 	case "balance":
 		d.ErrMsg = "Недостаточно средств на балансе"
 	case "gb_invalid":
-		d.ErrMsg = "Некорректное количество ГБ (1–1000)"
+		d.ErrMsg = "Минимум 10 ГБ, шагом 10 (10/20/30/…/1000)"
 	case "no_extra":
 		d.ErrMsg = "На вашем тарифе нельзя докупить трафик"
 	case "panel":
@@ -625,7 +625,7 @@ func (h *Handler) deleteAllDevices(c *fiber.Ctx) error {
 func (h *Handler) buyExtraGB(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uuid.UUID)
 	gb, err := strconv.Atoi(c.FormValue("gb"))
-	if err != nil || gb <= 0 || gb > 1000 {
+	if err != nil || gb < 10 || gb > 1000 || gb%10 != 0 {
 		return c.Redirect("/subscriptions?err=gb_invalid", fiber.StatusFound)
 	}
 	sub, err := h.db.GetActiveSubscription(c.Context(), userID)
