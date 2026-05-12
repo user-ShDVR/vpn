@@ -172,6 +172,11 @@ func main() {
 
 	prov := provisioner.New(database, rw)
 	prov.SetDefaultSquadUUID(cfg.RemnawaveDefaultSquadUUID)
+	if cfg.RemnawaveDefaultSquadUUID == "" {
+		log.Println("WARNING: REMNAWAVE_DEFAULT_SQUAD_UUID is empty — users will only get plan-specific squads")
+	} else {
+		log.Printf("default Remnawave squad: %s", cfg.RemnawaveDefaultSquadUUID)
+	}
 	scheduler := subscription.NewScheduler(database, prov)
 	scheduler.Start()
 	defer scheduler.Stop()

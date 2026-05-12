@@ -9,6 +9,7 @@ package provisioner
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -47,6 +48,7 @@ func (s *Service) Provision(ctx context.Context, user *db.User, sub *db.Subscrip
 
 	squads := s.composeSquads(plan)
 	trafficBytes := planTrafficBytes(plan)
+	log.Printf("provision user=%s plan=%s squads=%v default=%q", user.ID, plan.Name, squads, s.defaultSquadUUID)
 
 	if user.RemnawaveUUID != nil {
 		req := remnawave.UpdateUserRequest{
