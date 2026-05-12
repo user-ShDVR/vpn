@@ -337,20 +337,17 @@ func (h *Handler) registerSubmit(c *fiber.Ctx) error {
 		return h.renderRegister(c, "Email уже зарегистрирован", refCode)
 	}
 
+	// Record the referral link only — the trial subscription and the
+	// referrer's bonus days are granted later, once the user verifies
+	// their email (see verifyEmailHandler). Pre-verification grants invite
+	// throwaway-email farming.
 	if refCode != "" {
 		if referrer, err := h.db.GetUserByReferralCode(c.Context(), refCode); err == nil && referrer.ID != user.ID {
-			if _, err := h.db.CreateReferral(c.Context(), referrer.ID, user.ID, referralBonusDays); err == nil {
-				_ = h.provisioner.ExtendUserSubscription(c.Context(), referrer.ID, referralBonusDays)
-				_ = h.provisioner.ExtendUserSubscription(c.Context(), user.ID, referralBonusDays)
-			}
+			_, _ = h.db.CreateReferral(c.Context(), referrer.ID, user.ID, referralBonusDays)
 		}
 	}
 
 	h.sendVerifyEmail(c.Context(), user)
-
-	if _, _, err := h.provisioner.ActivateFreePlanIfNone(c.Context(), user); err != nil {
-		log.Printf("provision failed for %s: %v", user.Email, err)
-	}
 
 	token, err := auth.GenerateToken(user.ID, h.jwtSecret)
 	if err != nil {
@@ -389,7 +386,31 @@ func (h *Handler) verifyEmailHandler(c *fiber.Ctx) error {
 	if err := h.db.MarkEmailVerified(c.Context(), user.ID); err != nil {
 		return fiber.ErrInternalServerError
 	}
+	h.grantTrialSubscription(c.Context(), user)
 	return c.Redirect("/dashboard?verified=1", fiber.StatusFound)
+}
+
+// grantTrialSubscription provisions the 1-day trial plan and applies the
+// referral bonus (extra days for the new user + the referrer reward) if the
+// user signed up with a refcode. Idempotent: if the user already has an
+// active subscription, only the missing referrer bonus is processed.
+func (h *Handler) grantTrialSubscription(ctx context.Context, user *db.User) {
+	if _, _, err := h.provisioner.ActivateFreePlanIfNone(ctx, user); err != nil {
+		log.Printf("trial provision failed for %s: %v", user.Email, err)
+		return
+	}
+	ref, err := h.db.GetReferralByReferred(ctx, user.ID)
+	if err != nil || ref == nil {
+		return
+	}
+	// New user gets +bonusDays-1 (trial already gave 1 day; total = bonusDays).
+	extra := ref.BonusDays - 1
+	if extra > 0 {
+		_ = h.provisioner.ExtendUserSubscription(ctx, user.ID, extra)
+	}
+	// Referrer's reward: extend their active sub by the same bonus. No-op if
+	// the referrer has no active sub yet.
+	_ = h.provisioner.ExtendUserSubscription(ctx, ref.ReferrerID, ref.BonusDays)
 }
 
 func (h *Handler) resendVerifyEmail(c *fiber.Ctx) error {
@@ -482,6 +503,10 @@ func (h *Handler) dashboardPage(c *fiber.Ctx) error {
 	}
 	sub, plan := h.activeSubAndPlan(c.Context(), userID)
 	count, _ := h.db.CountReferrals(c.Context(), userID)
+	trialDays := 1
+	if ref, err := h.db.GetReferralByReferred(c.Context(), userID); err == nil && ref != nil && ref.BonusDays > 0 {
+		trialDays = ref.BonusDays
+	}
 	return render(c, templates.Dashboard(templates.DashboardData{
 		UserEmail:      user.Email,
 		BalanceKopecks: user.BalanceKopecks,
@@ -491,6 +516,7 @@ func (h *Handler) dashboardPage(c *fiber.Ctx) error {
 		EmailVerified:  user.EmailVerified,
 		JustVerified:   c.Query("verified") == "1",
 		JustResent:     c.Query("resent") == "1",
+		TrialDays:      trialDays,
 	}))
 }
 

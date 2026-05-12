@@ -24,6 +24,7 @@ type DashboardData struct {
 	EmailVerified  bool
 	JustVerified   bool
 	JustResent     bool
+	TrialDays      int // pending trial days unlocked on email verification (1 normal, 3 with referral)
 }
 
 func Dashboard(d DashboardData) templ.Component {
@@ -66,7 +67,7 @@ func Dashboard(d DashboardData) templ.Component {
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(d.UserEmail)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/dashboard.templ`, Line: 27, Col: 55}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/dashboard.templ`, Line: 28, Col: 55}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -89,7 +90,48 @@ func Dashboard(d DashboardData) templ.Component {
 				}
 			}
 			if !d.EmailVerified && !d.JustVerified {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div id=\"verify-banner\" class=\"bento-card-sm flex items-center gap-3 border-warning-500/30 bg-warning-500/5\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgb(var(--color-warning-400))\" stroke-width=\"2\" class=\"flex-shrink-0\"><path d=\"M12 9v3.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z\" stroke-linecap=\"round\" stroke-linejoin=\"round\"></path></svg><div class=\"flex-1 text-sm text-dark-200\">Email не подтверждён</div><button class=\"btn-secondary text-xs\" hx-post=\"/verify-email/resend\" hx-target=\"#verify-banner\" hx-swap=\"outerHTML\">Отправить ещё раз</button></div>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div id=\"verify-banner\" class=\"bento-card-accent flex flex-col gap-3 border-warning-500/40 bg-warning-500/5 sm:flex-row sm:items-center\"><div class=\"flex h-11 w-11 shrink-0 items-center justify-center rounded-bento-sm bg-warning-500/10 text-warning-400\"><svg class=\"h-6 w-6\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" stroke-width=\"1.6\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M21.75 9v.906a2.25 2.25 0 01-1.183 1.981l-6.478 3.488M2.25 9v.906a2.25 2.25 0 001.183 1.981l6.478 3.488m8.839 2.51l-4.66-2.51m0 0l-1.023-.55a2.25 2.25 0 00-2.134 0l-1.022.55m0 0l-4.661 2.51m16.5 1.615a2.25 2.25 0 01-1.183 1.98l-6.478 3.489a2.25 2.25 0 01-2.134 0L3.432 19.67A2.25 2.25 0 012.25 17.69V6.31a2.25 2.25 0 011.183-1.98l6.478-3.49a2.25 2.25 0 012.134 0l6.478 3.49a2.25 2.25 0 011.183 1.98v11.38z\"></path></svg></div><div class=\"flex-1\"><div class=\"h-display text-base text-dark-50\">Подтвердите email — получите ")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var4 string
+				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(trialDaysLabel(d.TrialDays))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/dashboard.templ`, Line: 42, Col: 131}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, " подписки</div><div class=\"mt-0.5 text-xs text-dark-400\">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				if d.TrialDays >= 3 {
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "Вы пришли по реф-ссылке: ")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					var templ_7745c5c3_Var5 string
+					templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(trialDaysLabel(d.TrialDays))
+					if templ_7745c5c3_Err != nil {
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/dashboard.templ`, Line: 45, Col: 81}
+					}
+					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, " пробного доступа после верификации")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+				} else {
+					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "Доступ к VPN откроется автоматически")
+					if templ_7745c5c3_Err != nil {
+						return templ_7745c5c3_Err
+					}
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</div></div><button class=\"btn-secondary text-xs\" hx-post=\"/verify-email/resend\" hx-target=\"#verify-banner\" hx-swap=\"outerHTML\">Отправить ещё раз</button></div>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -98,33 +140,33 @@ func Dashboard(d DashboardData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<div class=\"bento-grid\"><a href=\"/balance\" class=\"bento-card-sm transition hover:border-accent-400/40 group\"><div class=\"mb-3 flex items-center justify-between\"><div class=\"flex items-center gap-2.5\"><div class=\"flex h-9 w-9 items-center justify-center rounded-linear-lg bg-accent-500/10 text-accent-400 group-hover:bg-accent-500/20 transition\"><svg class=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" stroke-width=\"1.6\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z\"></path></svg></div><span class=\"text-xs font-medium uppercase tracking-wider text-dark-500\">Баланс</span></div><svg class=\"h-4 w-4 text-dark-500 transition group-hover:translate-x-1 group-hover:text-accent-400\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M9 18l6-6-6-6\"></path></svg></div><div class=\"h-display text-3xl text-accent-400 mono\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<div class=\"bento-grid\"><a href=\"/balance\" class=\"bento-card-sm transition hover:border-accent-400/40 group\"><div class=\"mb-3 flex items-center justify-between\"><div class=\"flex items-center gap-2.5\"><div class=\"flex h-9 w-9 items-center justify-center rounded-linear-lg bg-accent-500/10 text-accent-400 group-hover:bg-accent-500/20 transition\"><svg class=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" stroke-width=\"1.6\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z\"></path></svg></div><span class=\"text-xs font-medium uppercase tracking-wider text-dark-500\">Баланс</span></div><svg class=\"h-4 w-4 text-dark-500 transition group-hover:translate-x-1 group-hover:text-accent-400\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M9 18l6-6-6-6\"></path></svg></div><div class=\"h-display text-3xl text-accent-400 mono\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var4 string
-			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(FormatRubles(d.BalanceKopecks))
+			var templ_7745c5c3_Var6 string
+			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(FormatRubles(d.BalanceKopecks))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/dashboard.templ`, Line: 54, Col: 90}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/dashboard.templ`, Line: 66, Col: 90}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</div><div class=\"mt-1 text-[11px] text-dark-500\">Тапни — пополнить</div></a> <a href=\"/referral\" class=\"bento-card-sm transition hover:border-accent-400/40 group\"><div class=\"mb-3 flex items-center justify-between\"><div class=\"flex items-center gap-2.5\"><div class=\"flex h-9 w-9 items-center justify-center rounded-linear-lg bg-dark-800/60 text-dark-300 group-hover:text-accent-400 transition\"><svg class=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" stroke-width=\"1.6\"><path d=\"M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2\"></path><circle cx=\"9\" cy=\"7\" r=\"4\"></circle></svg></div><span class=\"text-xs font-medium uppercase tracking-wider text-dark-500\">Рефералы</span></div><svg class=\"h-4 w-4 text-dark-500 transition group-hover:translate-x-1 group-hover:text-accent-400\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M9 18l6-6-6-6\"></path></svg></div><div class=\"h-display text-3xl text-dark-50 mono\">")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var5 string
-			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", d.ReferralCount))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/dashboard.templ`, Line: 67, Col: 91}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</div><div class=\"mt-1 text-[11px] text-dark-500\">Тапни — пополнить</div></a> <a href=\"/referral\" class=\"bento-card-sm transition hover:border-accent-400/40 group\"><div class=\"mb-3 flex items-center justify-between\"><div class=\"flex items-center gap-2.5\"><div class=\"flex h-9 w-9 items-center justify-center rounded-linear-lg bg-dark-800/60 text-dark-300 group-hover:text-accent-400 transition\"><svg class=\"h-5 w-5\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" stroke-width=\"1.6\"><path d=\"M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2\"></path><circle cx=\"9\" cy=\"7\" r=\"4\"></circle></svg></div><span class=\"text-xs font-medium uppercase tracking-wider text-dark-500\">Рефералы</span></div><svg class=\"h-4 w-4 text-dark-500 transition group-hover:translate-x-1 group-hover:text-accent-400\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M9 18l6-6-6-6\"></path></svg></div><div class=\"h-display text-3xl text-dark-50 mono\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "</div><div class=\"mt-1 text-[11px] text-dark-500\">+3 дня за каждого друга</div></a></div></div>")
+			var templ_7745c5c3_Var7 string
+			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", d.ReferralCount))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/dashboard.templ`, Line: 79, Col: 91}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</div><div class=\"mt-1 text-[11px] text-dark-500\">+3 дня за каждого друга</div></a></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -154,57 +196,57 @@ func SubStatusCard(sub *db.Subscription, plan *db.Plan) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var6 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var6 == nil {
-			templ_7745c5c3_Var6 = templ.NopComponent
+		templ_7745c5c3_Var8 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var8 == nil {
+			templ_7745c5c3_Var8 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		if sub != nil && plan != nil {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<div class=\"bento-card-accent animate-scale-in\"><div class=\"mb-5 flex items-center justify-between\"><div><div class=\"badge-success\">Активна</div><h2 class=\"h-display mt-2 text-xl text-dark-50\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var7 string
-			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(plan.Name)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/dashboard.templ`, Line: 81, Col: 64}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</h2></div><div class=\"text-right\"><div class=\"text-[10px] uppercase tracking-widest text-dark-500\">Истекает</div><div class=\"mono mt-0.5 text-base font-semibold text-dark-50\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var8 string
-			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(sub.ExpiresAt.Format("02.01.2006"))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/dashboard.templ`, Line: 85, Col: 103}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</div><div class=\"text-xs text-dark-400\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<div class=\"bento-card-accent animate-scale-in\"><div class=\"mb-5 flex items-center justify-between\"><div><div class=\"badge-success\">Активна</div><h2 class=\"h-display mt-2 text-xl text-dark-50\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var9 string
-			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(daysLeftLabel(sub.ExpiresAt))
+			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(plan.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/dashboard.templ`, Line: 86, Col: 70}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/dashboard.templ`, Line: 93, Col: 64}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</div></div></div><div class=\"grid grid-cols-2 gap-2\"><a href=\"/subscriptions\" class=\"btn-primary text-sm\">Подключить</a> <a href=\"/subscription/purchase\" class=\"btn-secondary text-sm\">Сменить тариф</a></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</h2></div><div class=\"text-right\"><div class=\"text-[10px] uppercase tracking-widest text-dark-500\">Истекает</div><div class=\"mono mt-0.5 text-base font-semibold text-dark-50\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var10 string
+			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(sub.ExpiresAt.Format("02.01.2006"))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/dashboard.templ`, Line: 97, Col: 103}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</div><div class=\"text-xs text-dark-400\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var11 string
+			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(daysLeftLabel(sub.ExpiresAt))
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/dashboard.templ`, Line: 98, Col: 70}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</div></div></div><div class=\"grid grid-cols-2 gap-2\"><a href=\"/subscriptions\" class=\"btn-primary text-sm\">Подключить</a> <a href=\"/subscription/purchase\" class=\"btn-secondary text-sm\">Сменить тариф</a></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<div class=\"bento-card border border-error-500/20 animate-scale-in\"><div class=\"mb-5 flex items-center gap-3\"><div class=\"flex h-11 w-11 items-center justify-center rounded-bento-sm bg-error-500/10\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgb(var(--color-error-400))\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"10\"></circle><path d=\"M12 6v6l4 2\"></path></svg></div><h2 class=\"h-display text-xl text-dark-50\">Нет активной подписки</h2></div><p class=\"mb-5 text-sm text-dark-400\">Выберите тариф для доступа к VPN.</p><a href=\"/subscription/purchase\" class=\"btn-primary w-full\">Тарифы</a></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<div class=\"bento-card border border-error-500/20 animate-scale-in\"><div class=\"mb-5 flex items-center gap-3\"><div class=\"flex h-11 w-11 items-center justify-center rounded-bento-sm bg-error-500/10\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgb(var(--color-error-400))\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"10\"></circle><path d=\"M12 6v6l4 2\"></path></svg></div><h2 class=\"h-display text-xl text-dark-50\">Нет активной подписки</h2></div><p class=\"mb-5 text-sm text-dark-400\">Выберите тариф для доступа к VPN.</p><a href=\"/subscription/purchase\" class=\"btn-primary w-full\">Тарифы</a></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -222,6 +264,19 @@ func daysLeftLabel(expiresAt time.Time) string {
 		return "Остался 1 день"
 	}
 	return fmt.Sprintf("Осталось %d дн.", d)
+}
+
+func trialDaysLabel(days int) string {
+	if days <= 0 {
+		days = 1
+	}
+	switch {
+	case days%10 == 1 && days%100 != 11:
+		return fmt.Sprintf("%d день", days)
+	case days%10 >= 2 && days%10 <= 4 && (days%100 < 12 || days%100 > 14):
+		return fmt.Sprintf("%d дня", days)
+	}
+	return fmt.Sprintf("%d дней", days)
 }
 
 func FormatRubles(kopecks int64) string {

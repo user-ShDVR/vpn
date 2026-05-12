@@ -16,6 +16,7 @@ type DashboardData struct {
 	EmailVerified  bool
 	JustVerified   bool
 	JustResent     bool
+	TrialDays      int // pending trial days unlocked on email verification (1 normal, 3 with referral)
 }
 
 templ Dashboard(d DashboardData) {
@@ -33,9 +34,20 @@ templ Dashboard(d DashboardData) {
 				<div class="bento-card-sm border-success-500/30 bg-success-500/10 text-sm text-success-400">Письмо отправлено повторно</div>
 			}
 			if !d.EmailVerified && !d.JustVerified {
-				<div id="verify-banner" class="bento-card-sm flex items-center gap-3 border-warning-500/30 bg-warning-500/5">
-					<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--color-warning-400))" stroke-width="2" class="flex-shrink-0"><path d="M12 9v3.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" stroke-linecap="round" stroke-linejoin="round"/></svg>
-					<div class="flex-1 text-sm text-dark-200">Email не подтверждён</div>
+				<div id="verify-banner" class="bento-card-accent flex flex-col gap-3 border-warning-500/40 bg-warning-500/5 sm:flex-row sm:items-center">
+					<div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-bento-sm bg-warning-500/10 text-warning-400">
+						<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 9v.906a2.25 2.25 0 01-1.183 1.981l-6.478 3.488M2.25 9v.906a2.25 2.25 0 001.183 1.981l6.478 3.488m8.839 2.51l-4.66-2.51m0 0l-1.023-.55a2.25 2.25 0 00-2.134 0l-1.022.55m0 0l-4.661 2.51m16.5 1.615a2.25 2.25 0 01-1.183 1.98l-6.478 3.489a2.25 2.25 0 01-2.134 0L3.432 19.67A2.25 2.25 0 012.25 17.69V6.31a2.25 2.25 0 011.183-1.98l6.478-3.49a2.25 2.25 0 012.134 0l6.478 3.49a2.25 2.25 0 011.183 1.98v11.38z"/></svg>
+					</div>
+					<div class="flex-1">
+						<div class="h-display text-base text-dark-50">Подтвердите email — получите { trialDaysLabel(d.TrialDays) } подписки</div>
+						<div class="mt-0.5 text-xs text-dark-400">
+							if d.TrialDays >= 3 {
+								Вы пришли по реф-ссылке: { trialDaysLabel(d.TrialDays) } пробного доступа после верификации
+							} else {
+								Доступ к VPN откроется автоматически
+							}
+						</div>
+					</div>
 					<button class="btn-secondary text-xs" hx-post="/verify-email/resend" hx-target="#verify-banner" hx-swap="outerHTML">Отправить ещё раз</button>
 				</div>
 			}
@@ -114,6 +126,19 @@ func daysLeftLabel(expiresAt time.Time) string {
 		return "Остался 1 день"
 	}
 	return fmt.Sprintf("Осталось %d дн.", d)
+}
+
+func trialDaysLabel(days int) string {
+	if days <= 0 {
+		days = 1
+	}
+	switch {
+	case days%10 == 1 && days%100 != 11:
+		return fmt.Sprintf("%d день", days)
+	case days%10 >= 2 && days%10 <= 4 && (days%100 < 12 || days%100 > 14):
+		return fmt.Sprintf("%d дня", days)
+	}
+	return fmt.Sprintf("%d дней", days)
 }
 
 func FormatRubles(kopecks int64) string {
