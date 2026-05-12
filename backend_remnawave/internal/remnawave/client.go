@@ -88,18 +88,32 @@ type UpdateUserRequest struct {
 }
 
 type User struct {
-	UUID              uuid.UUID `json:"uuid"`
-	ShortUUID         string    `json:"shortUuid"`
-	Username          string    `json:"username"`
-	Status            string    `json:"status"`
-	SubscriptionURL   string    `json:"subscriptionUrl"`
-	ExpireAt          time.Time `json:"expireAt"`
-	TrafficLimitBytes int64     `json:"trafficLimitBytes"`
-	UsedTrafficBytes  int64     `json:"usedTrafficBytes"`
-	VlessUUID         string    `json:"vlessUuid,omitempty"`
-	TrojanPassword    string    `json:"trojanPassword,omitempty"`
-	SsPassword        string    `json:"ssPassword,omitempty"`
-	HappLink          string    `json:"happLink,omitempty"`
+	UUID                 uuid.UUID `json:"uuid"`
+	ShortUUID            string    `json:"shortUuid"`
+	Username             string    `json:"username"`
+	Status               string    `json:"status"`
+	SubscriptionURL      string    `json:"subscriptionUrl"`
+	ExpireAt             time.Time `json:"expireAt"`
+	TrafficLimitBytes    int64     `json:"trafficLimitBytes"`
+	UsedTrafficBytes     int64     `json:"usedTrafficBytes"`
+	TrafficLimitStrategy string    `json:"trafficLimitStrategy,omitempty"`
+	HwidDeviceLimit      int       `json:"hwidDeviceLimit,omitempty"`
+	VlessUUID            string    `json:"vlessUuid,omitempty"`
+	TrojanPassword       string    `json:"trojanPassword,omitempty"`
+	SsPassword           string    `json:"ssPassword,omitempty"`
+	HappLink             string    `json:"happLink,omitempty"`
+	ActiveInternalSquads []Squad   `json:"activeInternalSquads,omitempty"`
+}
+
+// Device is a single HWID-bound client device.
+type Device struct {
+	HWID        string    `json:"hwid"`
+	UserUUID    uuid.UUID `json:"userUuid"`
+	Platform    string    `json:"platform"`
+	DeviceModel string    `json:"deviceModel"`
+	OSVersion   string    `json:"osVersion,omitempty"`
+	UpdatedAt   time.Time `json:"updatedAt,omitempty"`
+	CreatedAt   time.Time `json:"createdAt,omitempty"`
 }
 
 type Squad struct {
@@ -241,6 +255,34 @@ func (c *Client) RevokeSubscription(ctx context.Context, userUUID uuid.UUID) (*U
 
 func (c *Client) ResetTraffic(ctx context.Context, userUUID uuid.UUID) error {
 	return c.do(ctx, "POST", "/api/users/"+userUUID.String()+"/actions/reset-traffic", nil, nil)
+}
+
+// --- HWID devices ---
+
+// ListDevices returns all HWID-bound devices for a user. The panel paginates;
+// we request the documented soft cap of 1000 (more than any reasonable
+// per-user device count). Returns the slice directly, not the {total,devices}
+// envelope.
+func (c *Client) ListDevices(ctx context.Context, userUUID uuid.UUID) ([]Device, error) {
+	var out struct {
+		Total   int      `json:"total"`
+		Devices []Device `json:"devices"`
+	}
+	path := "/api/hwid/devices/" + userUUID.String() + "?start=0&size=1000"
+	if err := c.do(ctx, "GET", path, nil, &out); err != nil {
+		return nil, err
+	}
+	return out.Devices, nil
+}
+
+// DeleteDevice revokes one HWID. Note: Remnawave's endpoint is POST (not
+// DELETE) and takes both userUuid and hwid in the body.
+func (c *Client) DeleteDevice(ctx context.Context, userUUID uuid.UUID, hwid string) error {
+	body := struct {
+		UserUUID string `json:"userUuid"`
+		HWID     string `json:"hwid"`
+	}{UserUUID: userUUID.String(), HWID: hwid}
+	return c.do(ctx, "POST", "/api/hwid/devices/delete", body, nil)
 }
 
 // --- Squads / nodes ---

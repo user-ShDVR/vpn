@@ -3,7 +3,6 @@ package web
 import (
 	"context"
 	"database/sql"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"log"
@@ -25,7 +24,6 @@ import (
 	"github.com/shdvr/vpn-backend/internal/provisioner"
 	"github.com/shdvr/vpn-backend/internal/remnawave"
 	"github.com/shdvr/vpn-backend/web/templates"
-	"github.com/skip2/go-qrcode"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -126,6 +124,9 @@ func (h *Handler) Register(app *fiber.App) {
 	g.Post("/verify-email/resend", h.resendVerifyEmail)
 	g.Get("/dashboard", h.dashboardPage)
 	g.Get("/subscriptions", h.subscriptionsPage)
+	g.Post("/subscriptions/refresh-traffic", h.refreshTraffic)
+	g.Post("/subscriptions/devices/delete-all", h.deleteAllDevices)
+	g.Post("/subscriptions/devices/:hwid/delete", h.deleteDevice)
 	g.Get("/connection", h.connectionPage)
 	g.Post("/dashboard/rotate", h.rotateSubAndRender)
 	g.Get("/subscription/purchase", h.purchasePage)
@@ -140,7 +141,6 @@ func (h *Handler) Register(app *fiber.App) {
 	g.Post("/profile/password", h.changePasswordSubmit)
 	g.Get("/referral", h.referralPage)
 	g.Get("/support", h.supportPage)
-	g.Get("/info", h.infoPage)
 }
 
 // --- Legal / support / info ---
@@ -161,12 +161,6 @@ func (h *Handler) supportPage(c *fiber.Ctx) error {
 	return render(c, templates.Support(templates.SupportData{
 		TGURL: h.supportTGURL, Email: h.supportEmail, FAQURL: h.supportFAQURL,
 	}))
-}
-
-func (h *Handler) infoPage(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(uuid.UUID)
-	url, _ := h.provisioner.GetSubscriptionURL(c.Context(), userID)
-	return render(c, templates.Info(templates.InfoData{SubURL: url}))
 }
 
 // --- Helpers ---
@@ -516,16 +510,64 @@ func (h *Handler) subscriptionsPage(c *fiber.Ctx) error {
 	d := templates.SubscriptionsData{Subscription: sub, Plan: plan}
 	if sub != nil {
 		d.SubURL, _ = h.provisioner.GetSubscriptionURL(c.Context(), userID)
-		if d.SubURL != "" {
-			if png, err := qrcode.Encode(d.SubURL, qrcode.Medium, 256); err == nil {
-				d.QRPNGBase64 = base64.StdEncoding.EncodeToString(png)
-			}
-		}
-		used, limit, _ := h.provisioner.GetTraffic(c.Context(), userID)
-		d.UsedBytes = used
-		d.LimitBytes = limit
+		h.fillRemnawaveData(c.Context(), userID, &d)
 	}
 	return render(c, templates.Subscriptions(d))
+}
+
+// fillRemnawaveData populates traffic, reset strategy, squads, devices, and
+// device limit from one /api/users + one /api/hwid/devices roundtrip. Used
+// by both the full-page render and the HTMX partial refresh.
+func (h *Handler) fillRemnawaveData(ctx context.Context, userID uuid.UUID, d *templates.SubscriptionsData) {
+	u, _ := h.provisioner.GetRemnawaveUser(ctx, userID)
+	if u != nil {
+		d.UsedBytes = u.UsedTrafficBytes
+		d.LimitBytes = u.TrafficLimitBytes
+		d.ResetStrategy = u.TrafficLimitStrategy
+		d.Squads = u.ActiveInternalSquads
+		d.DeviceLimit = u.HwidDeviceLimit
+	}
+	devices, err := h.provisioner.ListUserDevices(ctx, userID)
+	if err == nil {
+		d.Devices = devices
+	}
+}
+
+// refreshTraffic returns the updated traffic block as an HTMX partial.
+func (h *Handler) refreshTraffic(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(uuid.UUID)
+	d := templates.SubscriptionsData{}
+	h.fillRemnawaveData(c.Context(), userID, &d)
+	return render(c, templates.TrafficBlockPartial(d))
+}
+
+func (h *Handler) deleteDevice(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(uuid.UUID)
+	hwid := c.Params("hwid")
+	if hwid == "" {
+		return fiber.ErrBadRequest
+	}
+	if err := h.provisioner.DeleteUserDevice(c.Context(), userID, hwid); err != nil {
+		log.Printf("delete device: %v", err)
+	}
+	return h.renderDevicesCard(c, userID)
+}
+
+func (h *Handler) deleteAllDevices(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(uuid.UUID)
+	devices, _ := h.provisioner.ListUserDevices(c.Context(), userID)
+	for _, dev := range devices {
+		if err := h.provisioner.DeleteUserDevice(c.Context(), userID, dev.HWID); err != nil {
+			log.Printf("delete device %s: %v", dev.HWID, err)
+		}
+	}
+	return h.renderDevicesCard(c, userID)
+}
+
+func (h *Handler) renderDevicesCard(c *fiber.Ctx, userID uuid.UUID) error {
+	d := templates.SubscriptionsData{}
+	h.fillRemnawaveData(c.Context(), userID, &d)
+	return render(c, templates.DevicesCard(d))
 }
 
 // connectionPage renders the Remnawave install-guide (platforms / apps /
@@ -652,12 +694,7 @@ func (h *Handler) rotateSubAndRender(c *fiber.Ctx) error {
 	}
 	sub, plan := h.activeSubAndPlan(c.Context(), userID)
 	d := templates.SubscriptionsData{Subscription: sub, Plan: plan, SubURL: url}
-	if png, err := qrcode.Encode(url, qrcode.Medium, 256); err == nil {
-		d.QRPNGBase64 = base64.StdEncoding.EncodeToString(png)
-	}
-	used, limit, _ := h.provisioner.GetTraffic(c.Context(), userID)
-	d.UsedBytes = used
-	d.LimitBytes = limit
+	h.fillRemnawaveData(c.Context(), userID, &d)
 	return render(c, templates.SubCard(d))
 }
 

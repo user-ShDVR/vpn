@@ -174,6 +174,45 @@ func (s *Service) GetTraffic(ctx context.Context, userID uuid.UUID) (used, limit
 	return u.UsedTrafficBytes, u.TrafficLimitBytes, nil
 }
 
+// GetRemnawaveUser fetches the live panel-side user record (squads, reset
+// strategy, hwid limit, fresh traffic, …). Returns nil if user has no panel
+// link yet.
+func (s *Service) GetRemnawaveUser(ctx context.Context, userID uuid.UUID) (*remnawave.User, error) {
+	user, err := s.db.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if user.RemnawaveUUID == nil {
+		return nil, nil
+	}
+	return s.rw.GetUser(ctx, *user.RemnawaveUUID)
+}
+
+// ListUserDevices returns the HWID device list for the user, or nil if no
+// panel link.
+func (s *Service) ListUserDevices(ctx context.Context, userID uuid.UUID) ([]remnawave.Device, error) {
+	user, err := s.db.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if user.RemnawaveUUID == nil {
+		return nil, nil
+	}
+	return s.rw.ListDevices(ctx, *user.RemnawaveUUID)
+}
+
+// DeleteUserDevice revokes one HWID for the user.
+func (s *Service) DeleteUserDevice(ctx context.Context, userID uuid.UUID, hwid string) error {
+	user, err := s.db.GetUserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if user.RemnawaveUUID == nil {
+		return fmt.Errorf("user has no remnawave link")
+	}
+	return s.rw.DeleteDevice(ctx, *user.RemnawaveUUID, hwid)
+}
+
 // ActivateFreePlanIfNone activates the cheapest paid plan for users with no
 // active subscription. Idempotent — returns existing subscription if any.
 func (s *Service) ActivateFreePlanIfNone(ctx context.Context, user *db.User) (*db.Subscription, string, error) {

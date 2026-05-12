@@ -53,7 +53,7 @@ func Reset(token, errMsg string) templ.Component {
 				var templ_7745c5c3_Var3 string
 				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(errMsg)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `backend_remnawave/web/templates/reset.templ`, Line: 13, Col: 108}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/reset.templ`, Line: 13, Col: 108}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {
@@ -71,7 +71,7 @@ func Reset(token, errMsg string) templ.Component {
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(token)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `backend_remnawave/web/templates/reset.templ`, Line: 15, Col: 51}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/reset.templ`, Line: 15, Col: 51}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
