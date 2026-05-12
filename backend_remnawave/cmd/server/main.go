@@ -219,10 +219,12 @@ func main() {
 	apiHandler := api.NewHandler(api.Config{
 		DB: database, Provisioner: prov,
 		JWTSecret: cfg.JWTSecret, PublicBaseURL: cfg.PublicBaseURL,
-		Platega:       plategaCli,
-		Poller:        poller,
-		PlategaReturn: cfg.PlategaReturnURL,
-		PlategaFail:   cfg.PlategaFailURL,
+		Platega:           plategaCli,
+		Poller:            poller,
+		PlategaReturn:     cfg.PlategaReturnURL,
+		PlategaFail:       cfg.PlategaFailURL,
+		PlategaMerchantID: cfg.PlategaMerchantID,
+		PlategaSecret:     cfg.PlategaSecret,
 	})
 	apiHandler.Register(app)
 

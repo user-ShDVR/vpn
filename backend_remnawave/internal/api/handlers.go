@@ -26,41 +26,55 @@ import (
 )
 
 type Handler struct {
-	db             *db.DB
-	provisioner    *provisioner.Service
-	jwtSecret      string
-	publicBaseURL  string
-	platega        *platega.Client
-	poller         *payment.Poller
-	plategaReturn  string
-	plategaFail    string
+	db                  *db.DB
+	provisioner         *provisioner.Service
+	jwtSecret           string
+	publicBaseURL       string
+	platega             *platega.Client
+	poller              *payment.Poller
+	plategaReturn       string
+	plategaFail         string
+	plategaMerchantID   string
+	plategaSecret       string
 }
 
 type Config struct {
-	DB            *db.DB
-	Provisioner   *provisioner.Service
-	JWTSecret     string
-	PublicBaseURL string
-	Platega       *platega.Client
-	Poller        *payment.Poller
-	PlategaReturn string
-	PlategaFail   string
+	DB                *db.DB
+	Provisioner       *provisioner.Service
+	JWTSecret         string
+	PublicBaseURL     string
+	Platega           *platega.Client
+	Poller            *payment.Poller
+	PlategaReturn     string
+	PlategaFail       string
+	PlategaMerchantID string
+	PlategaSecret     string
 }
 
 func NewHandler(cfg Config) *Handler {
 	return &Handler{
-		db:            cfg.DB,
-		provisioner:   cfg.Provisioner,
-		jwtSecret:     cfg.JWTSecret,
-		publicBaseURL: cfg.PublicBaseURL,
-		platega:       cfg.Platega,
-		poller:        cfg.Poller,
-		plategaReturn: cfg.PlategaReturn,
-		plategaFail:   cfg.PlategaFail,
+		db:                cfg.DB,
+		provisioner:       cfg.Provisioner,
+		jwtSecret:         cfg.JWTSecret,
+		publicBaseURL:     cfg.PublicBaseURL,
+		platega:           cfg.Platega,
+		poller:            cfg.Poller,
+		plategaReturn:     cfg.PlategaReturn,
+		plategaFail:       cfg.PlategaFail,
+		plategaMerchantID: cfg.PlategaMerchantID,
+		plategaSecret:     cfg.PlategaSecret,
 	}
 }
 
 func (h *Handler) Register(app *fiber.App) {
+	// Platega server-to-server callback. Public route — auth is via header equality
+	// against our own X-MerchantId / X-Secret env config. Light rate cap.
+	webhookLimiter := limiter.New(limiter.Config{
+		Max:        60,
+		Expiration: 1 * time.Minute,
+	})
+	app.Post("/webhook/platega", webhookLimiter, h.plategaCallback)
+
 	v1 := app.Group("/api/v1")
 
 	authLimiter := limiter.New(limiter.Config{
@@ -485,6 +499,71 @@ func (h *Handler) buyPlan(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "vpn provisioning failed")
 	}
 	return c.JSON(fiber.Map{"subscription": sub, "subscription_url": url})
+}
+
+// --- Platega callback ---
+
+type plategaCallbackBody struct {
+	ID            string  `json:"id"`
+	Amount        float64 `json:"amount"`
+	Currency      string  `json:"currency"`
+	Status        string  `json:"status"`
+	PaymentMethod int     `json:"paymentMethod"`
+	Payload       string  `json:"payload"`
+}
+
+// plategaCallback handles the server-to-server notification Platega sends when
+// a transaction reaches a terminal state. Per Platega docs:
+//   - Auth: X-MerchantId + X-Secret headers, no HMAC. We verify they match our
+//     own merchant credentials (acts as shared secret).
+//   - Status enum: CONFIRMED | CANCELED (CHARGEBACKED mentioned but not in enum).
+//   - Must respond 200 within 60s; otherwise Platega retries 3x at 5-min intervals.
+//   - `payload` carries our payments.id (set at /transaction/process time).
+func (h *Handler) plategaCallback(c *fiber.Ctx) error {
+	if h.plategaMerchantID == "" || h.plategaSecret == "" {
+		return fiber.ErrServiceUnavailable
+	}
+	if c.Get("X-MerchantId") != h.plategaMerchantID || c.Get("X-Secret") != h.plategaSecret {
+		log.Printf("platega callback: header auth mismatch")
+		return fiber.ErrUnauthorized
+	}
+
+	var body plategaCallbackBody
+	if err := c.BodyParser(&body); err != nil {
+		return fiber.ErrBadRequest
+	}
+
+	// payload = our payment.id (UUID we generated at create-time).
+	paymentID, err := uuid.Parse(body.Payload)
+	if err != nil {
+		log.Printf("platega callback: invalid payload %q", body.Payload)
+		return fiber.ErrBadRequest
+	}
+	pmt, err := h.db.GetPaymentByID(c.Context(), paymentID)
+	if err != nil {
+		log.Printf("platega callback: payment %s not found", paymentID)
+		// 200 anyway — otherwise Platega retries forever for a row we don't have.
+		return c.SendString("OK")
+	}
+	if pmt.Status == "success" {
+		return c.SendString("OK") // idempotent
+	}
+
+	switch strings.ToUpper(body.Status) {
+	case "CONFIRMED":
+		desc := fmt.Sprintf("Platega top-up %s", body.ID)
+		if _, err := h.db.CreditBalance(c.Context(), pmt.UserID, pmt.AmountKopecks, "platega_topup", desc, nil); err != nil {
+			log.Printf("platega callback: credit failed: %v", err)
+			return fiber.ErrInternalServerError
+		}
+		_ = h.db.UpdatePaymentStatus(c.Context(), pmt.ID, "success", true)
+	case "CANCELED", "CANCELLED", "FAILED", "REJECTED", "EXPIRED":
+		_ = h.db.UpdatePaymentStatus(c.Context(), pmt.ID, "fail", false)
+	default:
+		// Unknown status — log and ack; poller will pick up next tick if needed.
+		log.Printf("platega callback: unknown status %q for payment %s", body.Status, pmt.ID)
+	}
+	return c.SendString("OK")
 }
 
 // --- Top-up via Platega ---
