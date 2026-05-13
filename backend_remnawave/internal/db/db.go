@@ -117,11 +117,12 @@ type Payment struct {
 }
 
 type Referral struct {
-	ID         uuid.UUID `db:"id" json:"id"`
-	ReferrerID uuid.UUID `db:"referrer_id" json:"referrer_id"`
-	ReferredID uuid.UUID `db:"referred_id" json:"referred_id"`
-	BonusDays  int       `db:"bonus_days" json:"bonus_days"`
-	CreatedAt  time.Time `db:"created_at" json:"created_at"`
+	ID         uuid.UUID  `db:"id" json:"id"`
+	ReferrerID uuid.UUID  `db:"referrer_id" json:"referrer_id"`
+	ReferredID uuid.UUID  `db:"referred_id" json:"referred_id"`
+	BonusDays  int        `db:"bonus_days" json:"bonus_days"`
+	RewardedAt *time.Time `db:"rewarded_at" json:"rewarded_at,omitempty"`
+	CreatedAt  time.Time  `db:"created_at" json:"created_at"`
 }
 
 type Plan struct {
@@ -432,6 +433,23 @@ func (d *DB) GetReferralByReferred(ctx context.Context, referredID uuid.UUID) (*
 	var r Referral
 	err := d.QueryRowxContext(ctx, `SELECT * FROM referrals WHERE referred_id = $1`, referredID).StructScan(&r)
 	return &r, err
+}
+
+// ClaimReferralReward atomically marks an unrewarded referral as rewarded
+// and returns it. Returns (nil, sql.ErrNoRows) if there is no pending
+// referral for this referred user — i.e. either no referral or already
+// claimed. Idempotent: multiple concurrent payment confirmations will only
+// reward the referrer once.
+func (d *DB) ClaimReferralReward(ctx context.Context, referredID uuid.UUID) (*Referral, error) {
+	var r Referral
+	err := d.QueryRowxContext(ctx,
+		`UPDATE referrals SET rewarded_at = NOW()
+		 WHERE referred_id = $1 AND rewarded_at IS NULL
+		 RETURNING *`, referredID).StructScan(&r)
+	if err != nil {
+		return nil, err
+	}
+	return &r, nil
 }
 
 func (d *DB) CountReferrals(ctx context.Context, referrerID uuid.UUID) (int, error) {

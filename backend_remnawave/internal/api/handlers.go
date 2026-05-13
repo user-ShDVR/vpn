@@ -151,13 +151,11 @@ func (h *Handler) authRegister(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusConflict, "email already registered")
 	}
 
+	// Record the referral link — referrer's bonus deferred to the new user's
+	// first successful payment to block throwaway-email farming.
 	if req.ReferralCode != "" {
-		referrer, refErr := h.db.GetUserByReferralCode(c.Context(), req.ReferralCode)
-		if refErr == nil && referrer.ID != user.ID {
-			if _, refErr := h.db.CreateReferral(c.Context(), referrer.ID, user.ID, referralBonusDays); refErr == nil {
-				_ = h.provisioner.ExtendUserSubscription(c.Context(), referrer.ID, referralBonusDays)
-				_ = h.provisioner.ExtendUserSubscription(c.Context(), user.ID, referralBonusDays)
-			}
+		if referrer, refErr := h.db.GetUserByReferralCode(c.Context(), req.ReferralCode); refErr == nil && referrer.ID != user.ID {
+			_, _ = h.db.CreateReferral(c.Context(), referrer.ID, user.ID, referralBonusDays)
 		}
 	}
 
@@ -557,6 +555,7 @@ func (h *Handler) plategaCallback(c *fiber.Ctx) error {
 			return fiber.ErrInternalServerError
 		}
 		_ = h.db.UpdatePaymentStatus(c.Context(), pmt.ID, "success", true)
+		h.rewardReferrerIfFirstPayment(c.Context(), pmt.UserID)
 	case "CANCELED", "CANCELLED", "FAILED", "REJECTED", "EXPIRED":
 		_ = h.db.UpdatePaymentStatus(c.Context(), pmt.ID, "fail", false)
 	default:
@@ -564,6 +563,25 @@ func (h *Handler) plategaCallback(c *fiber.Ctx) error {
 		log.Printf("platega callback: unknown status %q for payment %s", body.Status, pmt.ID)
 	}
 	return c.SendString("OK")
+}
+
+// rewardReferrerIfFirstPayment atomically claims any pending referral for
+// the referred user (returns sql.ErrNoRows if already rewarded or none) and
+// extends the referrer's subscription by the bonus days. Mirrors the same
+// helper on payment.Poller — both paths can reach a CONFIRMED status.
+func (h *Handler) rewardReferrerIfFirstPayment(ctx context.Context, userID uuid.UUID) {
+	ref, err := h.db.ClaimReferralReward(ctx, userID)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			log.Printf("claim referral reward user=%s: %v", userID, err)
+		}
+		return
+	}
+	if err := h.provisioner.ExtendUserSubscription(ctx, ref.ReferrerID, ref.BonusDays); err != nil {
+		log.Printf("extend referrer %s: %v", ref.ReferrerID, err)
+		return
+	}
+	log.Printf("referrer %s rewarded %d days (referred=%s)", ref.ReferrerID, ref.BonusDays, userID)
 }
 
 // --- Top-up via Platega ---

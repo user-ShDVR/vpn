@@ -183,6 +183,7 @@ func main() {
 
 	plategaCli := platega.New(cfg.PlategaMerchantID, cfg.PlategaSecret, cfg.PlategaBaseURL, cfg.PlategaPaymentMethod)
 	poller := payment.NewPoller(database, plategaCli)
+	poller.SetReferralExtender(prov)
 	poller.Start()
 	defer poller.Stop()
 

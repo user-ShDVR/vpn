@@ -390,10 +390,10 @@ func (h *Handler) verifyEmailHandler(c *fiber.Ctx) error {
 	return c.Redirect("/dashboard?verified=1", fiber.StatusFound)
 }
 
-// grantTrialSubscription provisions the 1-day trial plan and applies the
-// referral bonus (extra days for the new user + the referrer reward) if the
-// user signed up with a refcode. Idempotent: if the user already has an
-// active subscription, only the missing referrer bonus is processed.
+// grantTrialSubscription provisions the 1-day trial plan and gives the new
+// user their referral bonus days (1 normal, 3 with referral). The
+// REFERRER's bonus is deferred to the new user's first real payment — see
+// ClaimReferralReward — to block throwaway-email farming.
 func (h *Handler) grantTrialSubscription(ctx context.Context, user *db.User) {
 	if _, _, err := h.provisioner.ActivateFreePlanIfNone(ctx, user); err != nil {
 		log.Printf("trial provision failed for %s: %v", user.Email, err)
@@ -408,9 +408,6 @@ func (h *Handler) grantTrialSubscription(ctx context.Context, user *db.User) {
 	if extra > 0 {
 		_ = h.provisioner.ExtendUserSubscription(ctx, user.ID, extra)
 	}
-	// Referrer's reward: extend their active sub by the same bonus. No-op if
-	// the referrer has no active sub yet.
-	_ = h.provisioner.ExtendUserSubscription(ctx, ref.ReferrerID, ref.BonusDays)
 }
 
 func (h *Handler) resendVerifyEmail(c *fiber.Ctx) error {
