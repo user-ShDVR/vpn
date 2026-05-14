@@ -289,7 +289,7 @@ func (h *Handler) renderRegister(c *fiber.Ctx, errMsg, refCode string) error {
 	}
 	return render(c, templates.Register(templates.RegisterData{
 		ErrMsg: errMsg, RefCode: refCode,
-		CaptchaQuestion: chal.Question, CaptchaToken: chal.Token,
+		CaptchaQuestion: chal.Question, CaptchaImage: chal.QuestionDataURL, CaptchaToken: chal.Token,
 	}))
 }
 

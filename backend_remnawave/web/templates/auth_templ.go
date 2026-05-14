@@ -81,7 +81,8 @@ func Login(errMsg string) templ.Component {
 type RegisterData struct {
 	ErrMsg          string
 	RefCode         string
-	CaptchaQuestion string
+	CaptchaQuestion string // text fallback (a11y / no-js)
+	CaptchaImage    string // data:image/png;base64,... rendered image
 	CaptchaToken    string
 }
 
@@ -130,7 +131,7 @@ func Register(d RegisterData) templ.Component {
 				var templ_7745c5c3_Var6 string
 				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(d.ErrMsg)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/auth.templ`, Line: 54, Col: 110}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/auth.templ`, Line: 55, Col: 110}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 				if templ_7745c5c3_Err != nil {
@@ -153,7 +154,7 @@ func Register(d RegisterData) templ.Component {
 				var templ_7745c5c3_Var7 string
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(d.RefCode)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/auth.templ`, Line: 67, Col: 83}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/auth.templ`, Line: 68, Col: 83}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
@@ -169,33 +170,61 @@ func Register(d RegisterData) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<div><label class=\"mb-2 block text-xs font-medium uppercase tracking-wider text-dark-400\">Сколько будет ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<div><label class=\"mb-2 block text-xs font-medium uppercase tracking-wider text-dark-400\">Решите пример</label> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var8 string
-			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(d.CaptchaQuestion)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/auth.templ`, Line: 76, Col: 135}
+			if d.CaptchaImage != "" {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<img src=\"")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var8 string
+				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(d.CaptchaImage)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/auth.templ`, Line: 79, Col: 31}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\" alt=\"captcha\" draggable=\"false\" oncontextmenu=\"return false\" class=\"mb-2 h-14 w-full rounded-bento-sm border border-dark-700/50 bg-dark-800/60 object-contain select-none pointer-events-none\" style=\"user-select:none;-webkit-user-select:none\"> ")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			} else {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<div class=\"mb-2 select-none text-sm text-dark-200\">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var9 string
+				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(d.CaptchaQuestion)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/auth.templ`, Line: 83, Col: 77}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "</div>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<input class=\"input-field\" type=\"text\" name=\"captcha_answer\" inputmode=\"numeric\" pattern=\"-?[0-9]+\" required autocomplete=\"off\"> <input type=\"hidden\" name=\"captcha_token\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</label> <input class=\"input-field\" type=\"text\" name=\"captcha_answer\" inputmode=\"numeric\" pattern=\"-?[0-9]+\" required autocomplete=\"off\"> <input type=\"hidden\" name=\"captcha_token\" value=\"")
+			var templ_7745c5c3_Var10 string
+			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(d.CaptchaToken)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/auth.templ`, Line: 86, Col: 69}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var9 string
-			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(d.CaptchaToken)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/auth.templ`, Line: 78, Col: 69}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "\"></div><label class=\"flex items-start gap-2 text-xs text-dark-400\"><input type=\"checkbox\" name=\"accept_terms\" value=\"1\" required class=\"mt-0.5\"> <span>Я принимаю <a href=\"/terms\" target=\"_blank\" class=\"text-accent-400 underline\">пользовательское соглашение</a> и <a href=\"/privacy\" target=\"_blank\" class=\"text-accent-400 underline\">политику конфиденциальности</a></span></label> <button class=\"btn-primary w-full\" type=\"submit\">Создать аккаунт</button></form><p class=\"text-center text-sm text-dark-400\">Уже есть аккаунт? <a href=\"/login\" class=\"text-accent-400 hover:underline\">Войти</a></p></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\"></div><label class=\"flex items-start gap-2 text-xs text-dark-400\"><input type=\"checkbox\" name=\"accept_terms\" value=\"1\" required class=\"mt-0.5\"> <span>Я принимаю <a href=\"/terms\" target=\"_blank\" class=\"text-accent-400 underline\">пользовательское соглашение</a> и <a href=\"/privacy\" target=\"_blank\" class=\"text-accent-400 underline\">политику конфиденциальности</a></span></label> <button class=\"btn-primary w-full\" type=\"submit\">Создать аккаунт</button></form><p class=\"text-center text-sm text-dark-400\">Уже есть аккаунт? <a href=\"/login\" class=\"text-accent-400 hover:underline\">Войти</a></p></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

@@ -36,7 +36,8 @@ templ Login(errMsg string) {
 type RegisterData struct {
 	ErrMsg          string
 	RefCode         string
-	CaptchaQuestion string
+	CaptchaQuestion string // text fallback (a11y / no-js)
+	CaptchaImage    string // data:image/png;base64,... rendered image
 	CaptchaToken    string
 }
 
@@ -73,7 +74,14 @@ templ Register(d RegisterData) {
 					</div>
 				}
 				<div>
-					<label class="mb-2 block text-xs font-medium uppercase tracking-wider text-dark-400">Сколько будет { d.CaptchaQuestion }</label>
+					<label class="mb-2 block text-xs font-medium uppercase tracking-wider text-dark-400">Решите пример</label>
+					if d.CaptchaImage != "" {
+						<img src={ d.CaptchaImage } alt="captcha" draggable="false" oncontextmenu="return false"
+							class="mb-2 h-14 w-full rounded-bento-sm border border-dark-700/50 bg-dark-800/60 object-contain select-none pointer-events-none"
+							style="user-select:none;-webkit-user-select:none"/>
+					} else {
+						<div class="mb-2 select-none text-sm text-dark-200">{ d.CaptchaQuestion }</div>
+					}
 					<input class="input-field" type="text" name="captcha_answer" inputmode="numeric" pattern="-?[0-9]+" required autocomplete="off"/>
 					<input type="hidden" name="captcha_token" value={ d.CaptchaToken }/>
 				</div>

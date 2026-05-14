@@ -1,6 +1,6 @@
 module github.com/shdvr/vpn-backend
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/a-h/templ v0.3.1001
@@ -32,6 +32,7 @@ require (
 	github.com/valyala/fasthttp v1.51.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
+	golang.org/x/image v0.40.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect
-	golang.org/x/text v0.29.0 // indirect
+	golang.org/x/text v0.37.0 // indirect
 )
