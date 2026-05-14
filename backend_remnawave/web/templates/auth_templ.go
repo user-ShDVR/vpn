@@ -41,7 +41,7 @@ func Login(errMsg string) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"space-y-6\"><div class=\"text-center\"><div class=\"mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-accent-500/15 text-accent-400 text-2xl font-bold\">С</div><h1 class=\"mt-4 text-2xl font-bold text-dark-50\">СвязьOK</h1><p class=\"mt-1 text-xs text-dark-500\">Ускоритель связи</p><p class=\"mt-3 text-sm text-dark-400\">Вход в кабинет</p></div><form method=\"post\" action=\"/login\" class=\"glass space-y-4 rounded-3xl p-6\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"space-y-6\"><div class=\"text-center\"><div class=\"mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-accent-500/15 text-accent-400 text-2xl font-bold\">С</div><h1 class=\"mt-4 text-2xl font-bold text-dark-50\">СвязьОК</h1><p class=\"mt-1 text-xs text-dark-500\">Ускоритель связи</p><p class=\"mt-3 text-sm text-dark-400\">Вход в кабинет</p></div><form method=\"post\" action=\"/login\" class=\"glass space-y-4 rounded-3xl p-6\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -119,7 +119,7 @@ func Register(d RegisterData) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"space-y-6\"><div class=\"text-center\"><div class=\"mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-accent-500/15 text-accent-400 text-2xl font-bold\">С</div><h1 class=\"mt-4 text-2xl font-bold text-dark-50\">СвязьOK</h1><p class=\"mt-1 text-xs text-dark-500\">Ускоритель связи</p><p class=\"mt-3 text-sm text-dark-400\">Создайте аккаунт</p></div><form method=\"post\" action=\"/register\" class=\"glass space-y-4 rounded-3xl p-6\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<div class=\"space-y-6\"><div class=\"text-center\"><div class=\"mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-accent-500/15 text-accent-400 text-2xl font-bold\">С</div><h1 class=\"mt-4 text-2xl font-bold text-dark-50\">СвязьОК</h1><p class=\"mt-1 text-xs text-dark-500\">Ускоритель связи</p><p class=\"mt-3 text-sm text-dark-400\">Создайте аккаунт</p></div><form method=\"post\" action=\"/register\" class=\"glass space-y-4 rounded-3xl p-6\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

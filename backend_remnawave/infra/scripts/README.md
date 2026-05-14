@@ -24,7 +24,7 @@ backend talks only to the panel via `REMNAWAVE_BASE_URL`.
 2. **Add nodes** in the panel UI. They auto-connect using `SECRET_KEY`.
 3. **Create internal squads** in the panel. Each squad = one or more inbounds
    on one or more nodes. The squad UUID is what plans reference.
-4. **Wire the СвязьOK admin UI** (`/admin/servers`) — add one row per squad.
+4. **Wire the СвязьОК admin UI** (`/admin/servers`) — add one row per squad.
    The `remnawave_squad_uuid` column is the link.
 
 ## Cascade routing (RU → foreign)

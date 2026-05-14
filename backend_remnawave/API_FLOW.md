@@ -1,4 +1,4 @@
-# API Flow — СвязьOK
+# API Flow — СвязьОК
 
 Base URL: `https://api.yourdomain.com/api/v1`
 

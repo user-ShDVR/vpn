@@ -36,7 +36,7 @@ Done. Next steps:
   1. Open https://<DOMAIN> in browser, finish the first-run admin setup.
   2. Settings → API tokens → generate a token. Put it in REMNAWAVE_TOKEN.
   3. Add nodes via panel UI (if you ran with mode=panel).
-  4. Create internal squads + inbounds, copy their UUIDs into the СвязьOK admin
+  4. Create internal squads + inbounds, copy their UUIDs into the СвязьОК admin
      UI (/admin/servers) — those squad UUIDs are what plans bind to.
 
 For cascade routing (RU entry → foreign exit) configure the xray config of the

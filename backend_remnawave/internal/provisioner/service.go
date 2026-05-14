@@ -1,6 +1,6 @@
 // Package provisioner mediates between the cabinet DB and the Remnawave panel.
 //
-// One СвязьOK user maps to exactly one Remnawave user. The Remnawave panel
+// One СвязьОК user maps to exactly one Remnawave user. The Remnawave panel
 // returns a single `subscriptionUrl` that fans out to whatever nodes/inbounds
 // the user's active internal squads grant access to. There is no per-server
 // row in the DB any more — Remnawave does the multi-node bookkeeping itself.
@@ -80,7 +80,7 @@ func (s *Service) Provision(ctx context.Context, user *db.User, sub *db.Subscrip
 		TrafficLimitBytes:    trafficBytes,
 		TrafficLimitStrategy: resetStrategyOrDefault(plan.ResetStrategy),
 		Email:                user.Email,
-		Description:          "СвязьOK · " + user.Email,
+		Description:          "СвязьОК · " + user.Email,
 		HwidDeviceLimit:      plan.MaxDevices,
 		ActiveInternalSquads: squads,
 	}

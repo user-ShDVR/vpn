@@ -182,7 +182,7 @@ func (h *Handler) termsPage(c *fiber.Ctx) error {
 // unsubscribeHandler honours RFC 8058 List-Unsubscribe / One-Click. Gmail and
 // Yandex POST here when a user clicks the inbox "Unsubscribe" link; we must
 // reply 200 quickly. Browser GET shows a confirmation page pointing to
-// /profile (where the user can disable notifications). All СвязьOK email is
+// /profile (where the user can disable notifications). All СвязьОК email is
 // transactional, so we don't track an "unsubscribed" flag — but acknowledge
 // politely to keep deliverability scoring happy.
 func (h *Handler) unsubscribeHandler(c *fiber.Ctx) error {
@@ -192,11 +192,11 @@ func (h *Handler) unsubscribeHandler(c *fiber.Ctx) error {
 	}
 	c.Set("Content-Type", "text/html; charset=utf-8")
 	return c.SendString(`<!doctype html><meta charset="utf-8">
-<title>Отписка — СвязьOK</title>
+<title>Отписка — СвязьОК</title>
 <body style="font-family:system-ui,sans-serif;background:#0a0f1a;color:#f9fafb;padding:48px;text-align:center">
 <div style="max-width:480px;margin:0 auto">
 <h1>Отписка получена</h1>
-<p>Письма от СвязьOK — только транзакционные (подтверждение email, восстановление пароля).
+<p>Письма от СвязьОК — только транзакционные (подтверждение email, восстановление пароля).
 Полностью отключить их нельзя, иначе вход в кабинет не работает.</p>
 <p style="margin-top:24px"><a href="/profile" style="color:#8689f0">Перейти в профиль</a></p>
 </div></body>`)
@@ -412,7 +412,7 @@ func (h *Handler) sendVerifyEmail(ctx context.Context, user *db.User) {
 		return
 	}
 	link := h.publicBaseURL + "/verify-email?token=" + tok
-	_ = h.mailer.Send(ctx, user.Email, "verify", "Подтвердите email — СвязьOK", email.TemplateData{
+	_ = h.mailer.Send(ctx, user.Email, "verify", "Подтвердите email — СвязьОК", email.TemplateData{
 		UserEmail: user.Email, Link: link,
 	})
 }
@@ -482,7 +482,7 @@ func (h *Handler) forgotSubmit(c *fiber.Ctx) error {
 		tok, _ := db.RandomToken(32)
 		_ = h.db.SetPasswordResetToken(c.Context(), user.ID, tok, time.Now().Add(1*time.Hour))
 		link := h.publicBaseURL + "/reset?token=" + tok
-		_ = h.mailer.Send(c.Context(), user.Email, "reset", "Сброс пароля — СвязьOK", email.TemplateData{
+		_ = h.mailer.Send(c.Context(), user.Email, "reset", "Сброс пароля — СвязьОК", email.TemplateData{
 			UserEmail: user.Email, Link: link,
 		})
 	}

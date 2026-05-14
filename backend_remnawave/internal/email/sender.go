@@ -30,7 +30,7 @@ type Config struct {
 	Pass     string
 	From     string
 	TLSMode  string // "starttls" | "tls" | "none"
-	AppName  string // used in templates (default "СвязьOK")
+	AppName  string // used in templates (default "СвязьОК")
 }
 
 type Sender struct {
@@ -39,7 +39,7 @@ type Sender struct {
 
 func New(cfg Config) *Sender {
 	if cfg.AppName == "" {
-		cfg.AppName = "СвязьOK"
+		cfg.AppName = "СвязьОК"
 	}
 	if cfg.Port == 0 {
 		cfg.Port = 587
