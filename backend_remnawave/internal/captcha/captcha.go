@@ -58,7 +58,7 @@ func New(secret string) (Challenge, error) {
 		if a < b {
 			a, b = b, a
 		}
-		op, answer = "−", a-b
+		op, answer = "-", a-b
 	}
 
 	expires := time.Now().Add(validity).Unix()
