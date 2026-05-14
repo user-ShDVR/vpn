@@ -179,7 +179,7 @@ func (s *Service) GetTraffic(ctx context.Context, userID uuid.UUID) (used, limit
 	if err != nil {
 		return 0, 0, err
 	}
-	return u.UsedTrafficBytes, u.TrafficLimitBytes, nil
+	return u.UsedBytes(), u.TrafficLimitBytes, nil
 }
 
 // GetRemnawaveUser fetches the live panel-side user record (squads, reset
@@ -281,6 +281,19 @@ func resetStrategyOrDefault(s string) string {
 		return s
 	}
 	return remnawave.StrategyNoReset
+}
+
+// ResetUserTraffic zeroes the user's current-period traffic counter on the
+// panel. Called on plan switch / new purchase so the new period starts at 0.
+func (s *Service) ResetUserTraffic(ctx context.Context, userID uuid.UUID) error {
+	user, err := s.db.GetUserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if user.RemnawaveUUID == nil {
+		return nil
+	}
+	return s.rw.ResetTraffic(ctx, *user.RemnawaveUUID)
 }
 
 // AddTraffic bumps the user's Remnawave trafficLimitBytes by extraBytes.

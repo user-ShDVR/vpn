@@ -87,22 +87,42 @@ type UpdateUserRequest struct {
 	ActiveInternalSquads []string   `json:"activeInternalSquads,omitempty"`
 }
 
+type UserTraffic struct {
+	UsedTrafficBytes         int64 `json:"usedTrafficBytes"`
+	LifetimeUsedTrafficBytes int64 `json:"lifetimeUsedTrafficBytes"`
+}
+
 type User struct {
-	UUID                 uuid.UUID `json:"uuid"`
-	ShortUUID            string    `json:"shortUuid"`
-	Username             string    `json:"username"`
-	Status               string    `json:"status"`
-	SubscriptionURL      string    `json:"subscriptionUrl"`
-	ExpireAt             time.Time `json:"expireAt"`
-	TrafficLimitBytes    int64     `json:"trafficLimitBytes"`
-	UsedTrafficBytes     int64     `json:"usedTrafficBytes"`
-	TrafficLimitStrategy string    `json:"trafficLimitStrategy,omitempty"`
-	HwidDeviceLimit      int       `json:"hwidDeviceLimit,omitempty"`
-	VlessUUID            string    `json:"vlessUuid,omitempty"`
-	TrojanPassword       string    `json:"trojanPassword,omitempty"`
-	SsPassword           string    `json:"ssPassword,omitempty"`
-	HappLink             string    `json:"happLink,omitempty"`
-	ActiveInternalSquads []Squad   `json:"activeInternalSquads,omitempty"`
+	UUID                 uuid.UUID    `json:"uuid"`
+	ShortUUID            string       `json:"shortUuid"`
+	Username             string       `json:"username"`
+	Status               string       `json:"status"`
+	SubscriptionURL      string       `json:"subscriptionUrl"`
+	ExpireAt             time.Time    `json:"expireAt"`
+	TrafficLimitBytes    int64        `json:"trafficLimitBytes"`
+	// LegacyUsedTrafficBytes is the pre-2.x top-level field. Newer panels
+	// move usage under UserTraffic. UsedBytes() returns whichever is set.
+	LegacyUsedTrafficBytes int64        `json:"usedTrafficBytes"`
+	UserTraffic            *UserTraffic `json:"userTraffic,omitempty"`
+	TrafficLimitStrategy   string       `json:"trafficLimitStrategy,omitempty"`
+	HwidDeviceLimit        int          `json:"hwidDeviceLimit,omitempty"`
+	VlessUUID              string       `json:"vlessUuid,omitempty"`
+	TrojanPassword         string       `json:"trojanPassword,omitempty"`
+	SsPassword             string       `json:"ssPassword,omitempty"`
+	HappLink               string       `json:"happLink,omitempty"`
+	ActiveInternalSquads   []Squad      `json:"activeInternalSquads,omitempty"`
+}
+
+// UsedBytes returns the current-period traffic usage, transparently handling
+// both the new (nested `userTraffic`) and legacy (top-level) panel shapes.
+func (u *User) UsedBytes() int64 {
+	if u == nil {
+		return 0
+	}
+	if u.UserTraffic != nil && u.UserTraffic.UsedTrafficBytes > 0 {
+		return u.UserTraffic.UsedTrafficBytes
+	}
+	return u.LegacyUsedTrafficBytes
 }
 
 // Device is a single HWID-bound client device.

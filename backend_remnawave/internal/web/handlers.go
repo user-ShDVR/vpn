@@ -576,7 +576,7 @@ func encodeQR(url string) string {
 func (h *Handler) fillRemnawaveData(ctx context.Context, userID uuid.UUID, d *templates.SubscriptionsData) {
 	u, _ := h.provisioner.GetRemnawaveUser(ctx, userID)
 	if u != nil {
-		d.UsedBytes = u.UsedTrafficBytes
+		d.UsedBytes = u.UsedBytes()
 		d.LimitBytes = u.TrafficLimitBytes
 		d.ResetStrategy = u.TrafficLimitStrategy
 		d.Squads = u.ActiveInternalSquads
@@ -875,6 +875,8 @@ func (h *Handler) buyPlanSubmit(c *fiber.Ctx) error {
 	if _, err := h.provisioner.Provision(c.Context(), user, sub); err != nil {
 		return h.renderPurchase(c, "Ошибка подключения к серверу связи: "+err.Error())
 	}
+	// New billing period — wipe usage counter so user starts at 0.
+	_ = h.provisioner.ResetUserTraffic(c.Context(), userID)
 	return c.Redirect("/subscriptions", fiber.StatusFound)
 }
 

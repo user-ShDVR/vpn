@@ -347,6 +347,17 @@ func (d *DB) ListExpiredActiveSubscriptions(ctx context.Context) ([]Subscription
 	return subs, err
 }
 
+// ListActiveSubscriptions returns all currently-active subscriptions for
+// background jobs that need to walk every paying user (e.g. resync reset
+// strategy on Remnawave after plan/strategy schema change).
+func (d *DB) ListActiveSubscriptions(ctx context.Context) ([]Subscription, error) {
+	var subs []Subscription
+	err := d.SelectContext(ctx, &subs,
+		`SELECT * FROM subscriptions WHERE is_active = TRUE AND expires_at > NOW()`,
+	)
+	return subs, err
+}
+
 func (d *DB) DeactivateUserSubscriptions(ctx context.Context, userID uuid.UUID) error {
 	_, err := d.ExecContext(ctx,
 		`UPDATE subscriptions SET is_active = FALSE WHERE user_id = $1 AND is_active = TRUE`,
