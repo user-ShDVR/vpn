@@ -73,68 +73,82 @@ func New(secret string) (Challenge, error) {
 	}, nil
 }
 
-// renderImage rasterizes the question as a small PNG with light noise so
-// the text isn't selectable via DOM and resists trivial OCR. Falls back to
-// empty string on any draw error — template can show the plain string then.
+// renderImage rasterizes the question as a PNG. basicfont is fixed at 7x13,
+// so we draw each glyph onto a tiny temp image and then nearest-neighbor
+// upscale 4x onto the final canvas — gives ~52px tall glyphs at low overhead.
+// Noise dots + diagonal lines drawn on top of the upscale so they stay 1px
+// crisp (harder for OCR to filter out).
 func renderImage(text string) string {
 	const (
-		w, h    = 180, 56
-		scale   = 2 // 2x oversample for crispness on retina
-		fontDX  = 7
-		fontDY  = 13
+		scale  = 4  // each pixel of the 7x13 font becomes scale×scale block
+		padX   = 6  // left/right padding in small-image px
+		padY   = 4  // top/bottom padding in small-image px
+		fontDX = 7
+		fontDY = 13
 	)
-	img := image.NewRGBA(image.Rect(0, 0, w*scale, h*scale))
+	n := len(text)
+	smallW := padX*2 + n*fontDX
+	smallH := padY*2 + fontDY + 4
+
+	small := image.NewRGBA(image.Rect(0, 0, smallW, smallH))
 	bg := color.RGBA{R: 0x11, G: 0x18, B: 0x27, A: 0xff} // dark-800
-	draw.Draw(img, img.Bounds(), &image.Uniform{C: bg}, image.Point{}, draw.Src)
+	draw.Draw(small, small.Bounds(), &image.Uniform{C: bg}, image.Point{}, draw.Src)
 
 	rng := mrand.New(mrand.NewSource(time.Now().UnixNano()))
-
-	// Random noise dots
-	for i := 0; i < 250; i++ {
-		x := rng.Intn(w * scale)
-		y := rng.Intn(h * scale)
-		gray := uint8(60 + rng.Intn(60))
-		img.Set(x, y, color.RGBA{R: gray, G: gray, B: gray, A: 0xff})
-	}
-
-	// Draw chars one by one at slightly jittered Y positions, alternating colors
 	face := basicfont.Face7x13
-	startX := 12 * scale
+
+	// Render each char with jittered Y + alternating colors.
 	for i, r := range text {
 		col := color.RGBA{R: 0xf9, G: 0xfa, B: 0xfb, A: 0xff} // dark-50
 		if i%2 == 0 {
-			col = color.RGBA{R: 0x56, G: 0x59, B: 0xf0, A: 0xff} // accent-400
+			col = color.RGBA{R: 0x86, G: 0x89, B: 0xf0, A: 0xff} // accent-400
 		}
-		dy := (h*scale)/2 + (fontDY*scale)/3 + rng.Intn(8) - 4
-		dx := startX + i*fontDX*scale + rng.Intn(4) - 2
+		dy := padY + fontDY - 1 + rng.Intn(3) - 1
+		dx := padX + i*fontDX + rng.Intn(2) - 1
 		d := &font.Drawer{
-			Dst:  img,
+			Dst:  small,
 			Src:  &image.Uniform{C: col},
-			Face: scaleFace(face, scale),
+			Face: face,
 			Dot:  fixed.Point26_6{X: fixed.I(dx), Y: fixed.I(dy)},
 		}
 		d.DrawString(string(r))
 	}
 
-	// Random diagonal line for extra entropy
+	// Nearest-neighbor upscale to the final canvas.
+	bigW := smallW * scale
+	bigH := smallH * scale
+	big := image.NewRGBA(image.Rect(0, 0, bigW, bigH))
+	for y := 0; y < smallH; y++ {
+		for x := 0; x < smallW; x++ {
+			c := small.RGBAAt(x, y)
+			for dy := 0; dy < scale; dy++ {
+				for dx := 0; dx < scale; dx++ {
+					big.SetRGBA(x*scale+dx, y*scale+dy, c)
+				}
+			}
+		}
+	}
+
+	// Noise dots on the upscaled canvas (keep them 1px).
+	for i := 0; i < 350; i++ {
+		x := rng.Intn(bigW)
+		y := rng.Intn(bigH)
+		gray := uint8(60 + rng.Intn(60))
+		big.Set(x, y, color.RGBA{R: gray, G: gray, B: gray, A: 0xff})
+	}
+	// A couple of obscuring diagonal lines.
 	for i := 0; i < 2; i++ {
-		x0, y0 := rng.Intn(w*scale), rng.Intn(h*scale)
-		x1, y1 := rng.Intn(w*scale), rng.Intn(h*scale)
-		drawLine(img, x0, y0, x1, y1, color.RGBA{R: 0x49, G: 0x50, B: 0x5d, A: 0xff})
+		x0, y0 := rng.Intn(bigW), rng.Intn(bigH)
+		x1, y1 := rng.Intn(bigW), rng.Intn(bigH)
+		drawLine(big, x0, y0, x1, y1, color.RGBA{R: 0x49, G: 0x50, B: 0x5d, A: 0xff})
 	}
 
 	var buf bytes.Buffer
-	if err := png.Encode(&buf, img); err != nil {
+	if err := png.Encode(&buf, big); err != nil {
 		return ""
 	}
 	return "data:image/png;base64," + base64.StdEncoding.EncodeToString(buf.Bytes())
 }
-
-// scaleFace wraps a font.Face and renders it at `scale`x by drawing it onto
-// a tiny buffer and then expanding. Quick hack — basicfont has no built-in
-// scaling. For our 2x upscale we simply request the same face; result looks
-// fine on retina at h-56 element height.
-func scaleFace(f font.Face, _ int) font.Face { return f }
 
 // drawLine — Bresenham-ish, good enough for the captcha noise overlay.
 func drawLine(img *image.RGBA, x0, y0, x1, y1 int, c color.RGBA) {
