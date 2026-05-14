@@ -43,14 +43,22 @@ templ Referral(d ReferralData) {
 			</div>
 			<div>
 				<h2 class="mb-3 text-sm font-semibold uppercase tracking-wider text-dark-400">Приглашённые</h2>
+				<p class="mb-3 text-[11px] text-dark-500">+{ fmt.Sprintf("%d", d.BonusDays) } дней начисляются только после <b>первой оплаты</b> приглашённого.</p>
 				if len(d.List) == 0 {
 					<div class="glass rounded-2xl p-5 text-center text-sm text-dark-500">Пока никого. Поделитесь ссылкой!</div>
 				} else {
 					<div class="space-y-2">
 						for _, r := range d.List {
-							<div class="glass rounded-xl p-3 flex items-center justify-between">
-								<div class="text-sm text-dark-100">{ maskEmail(r.Email) }</div>
-								<div class="text-xs text-dark-500 mono">{ r.CreatedAt.Format("02.01.2006") }</div>
+							<div class="glass rounded-xl p-3 flex items-center justify-between gap-2">
+								<div class="min-w-0 flex-1">
+									<div class="truncate text-sm text-dark-100">{ maskEmail(r.Email) }</div>
+									<div class="text-[11px] text-dark-500 mono">{ r.CreatedAt.Format("02.01.2006") }</div>
+								</div>
+								if r.RewardedAt != nil {
+									<span class="badge-success normal-case tracking-normal">Оплатил · +{ fmt.Sprintf("%d", r.BonusDays) } дн.</span>
+								} else {
+									<span class="badge-warning normal-case tracking-normal">Ждём оплату</span>
+								}
 							</div>
 						}
 					</div>
