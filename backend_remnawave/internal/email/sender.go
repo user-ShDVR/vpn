@@ -7,11 +7,13 @@ package email
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"embed"
 	"fmt"
 	"html/template"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/wneessen/go-mail"
 )
@@ -81,6 +83,26 @@ func (s *Sender) Send(ctx context.Context, to, templateName, subject string, dat
 	if err := msg.To(to); err != nil {
 		return fmt.Errorf("set to: %w", err)
 	}
+	// Use the From-domain in Message-ID instead of go-mail's default
+	// container hostname — `<...@ce169d0f2bd5>` looks fishy to Gmail/Yandex
+	// and tanks reputation. We re-derive after From() since msg.GetMessageID
+	// hasn't generated one yet here, but go-mail will use this hostname.
+	if dom := domainOf(s.cfg.From); dom != "" {
+		msg.SetMessageIDWithValue(makeMessageID(dom))
+	}
+	// Headers that mail filters look for on transactional mail to relax
+	// scoring (List-Unsubscribe per RFC 8058, Auto-Submitted per RFC 3834,
+	// Reply-To routing replies to a real human inbox).
+	msg.SetGenHeader(mail.HeaderListUnsubscribe,
+		"<mailto:unsubscribe@"+domainOf(s.cfg.From)+">, <https://"+domainOf(s.cfg.From)+"/profile>")
+	msg.SetGenHeader("List-Unsubscribe-Post", "List-Unsubscribe=One-Click")
+	msg.SetGenHeader("Auto-Submitted", "auto-generated")
+	msg.SetGenHeader("Precedence", "transactional")
+	msg.SetGenHeader("X-Auto-Response-Suppress", "All")
+	msg.SetGenHeader("Content-Language", "ru")
+	if replyTo := strings.Replace(s.cfg.From, "noreply", "support", 1); replyTo != s.cfg.From {
+		_ = msg.ReplyTo(replyTo)
+	}
 	msg.Subject(subject)
 	msg.SetBodyString(mail.TypeTextPlain, textBody)
 	msg.AddAlternativeString(mail.TypeTextHTML, htmlBody)
@@ -118,6 +140,29 @@ func render(name string, data TemplateData) (string, error) {
 		return "", err
 	}
 	return buf.String(), nil
+}
+
+// domainOf extracts the host portion of "Name <user@host>" or plain
+// "user@host" — used for Message-ID and List-Unsubscribe URL synthesis.
+func domainOf(from string) string {
+	addr := from
+	if i := strings.LastIndex(from, "<"); i >= 0 {
+		if j := strings.LastIndex(from, ">"); j > i {
+			addr = from[i+1 : j]
+		}
+	}
+	if at := strings.LastIndex(addr, "@"); at >= 0 && at+1 < len(addr) {
+		return addr[at+1:]
+	}
+	return ""
+}
+
+// makeMessageID builds an RFC-5322 Message-ID anchored on our own domain
+// (Gmail/Yandex flag IDs ending in a docker container hex hostname).
+func makeMessageID(domain string) string {
+	var rb [12]byte
+	_, _ = rand.Read(rb[:])
+	return fmt.Sprintf("<%d.%x@%s>", time.Now().UnixNano(), rb, domain)
 }
 
 // stripTags is a poor-man's HTML→text fallback for the plain-text alt.
