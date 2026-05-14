@@ -65,7 +65,7 @@ func Support(d SupportData) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" target=\"_blank\" rel=\"noopener\" class=\"glass rounded-2xl p-5 transition hover:border-accent-400/30\"><div class=\"flex items-center gap-3\"><div class=\"flex h-11 w-11 items-center justify-center rounded-2xl bg-accent-500/15\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgb(86,89,240)\" stroke-width=\"2\"><path d=\"M21.99 4.05L2.06 11.93c-.74.29-.74 1.34.01 1.61l5.06 1.85 1.95 6.34c.18.6.96.78 1.38.32l3.04-3.32 5.27 3.84c.49.36 1.18.1 1.32-.5L23.97 4.97c.16-.69-.51-1.27-1.18-.92h-.8z\"></path></svg></div><div><div class=\"text-base font-semibold text-dark-100\">Telegram</div><div class=\"text-xs text-dark-400\">Самый быстрый канал</div></div></div></a> ")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" target=\"_blank\" rel=\"noopener\" class=\"glass rounded-2xl p-5 transition hover:border-accent-400/30\"><div class=\"flex items-center gap-3\"><div class=\"flex h-11 w-11 items-center justify-center rounded-2xl bg-accent-500/15\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"rgb(86,89,240)\" stroke-width=\"2\"><path d=\"M21.99 4.05L2.06 11.93c-.74.29-.74 1.34.01 1.61l5.06 1.85 1.95 6.34c.18.6.96.78 1.38.32l3.04-3.32 5.27 3.84c.49.36 1.18.1 1.32-.5L23.97 4.97c.16-.69-.51-1.27-1.18-.92h-.8z\"></path></svg></div><div><div class=\"text-base font-semibold text-dark-100\">Telegram</div><div class=\"text-xs text-dark-400\">Самая быстрая поддержка</div></div></div></a> ")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
