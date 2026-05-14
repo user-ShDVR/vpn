@@ -93,16 +93,15 @@ func (s *Sender) Send(ctx context.Context, to, templateName, subject string, dat
 	// Headers that mail filters look for on transactional mail to relax
 	// scoring (List-Unsubscribe per RFC 8058, Auto-Submitted per RFC 3834,
 	// Reply-To routing replies to a real human inbox).
+	dom := domainOf(s.cfg.From)
 	msg.SetGenHeader(mail.HeaderListUnsubscribe,
-		"<mailto:unsubscribe@"+domainOf(s.cfg.From)+">, <https://"+domainOf(s.cfg.From)+"/profile>")
+		"<mailto:postmaster@"+dom+"?subject=unsubscribe>, <https://"+dom+"/unsubscribe>")
 	msg.SetGenHeader("List-Unsubscribe-Post", "List-Unsubscribe=One-Click")
 	msg.SetGenHeader("Auto-Submitted", "auto-generated")
 	msg.SetGenHeader("Precedence", "transactional")
 	msg.SetGenHeader("X-Auto-Response-Suppress", "All")
 	msg.SetGenHeader("Content-Language", "ru")
-	if replyTo := strings.Replace(s.cfg.From, "noreply", "support", 1); replyTo != s.cfg.From {
-		_ = msg.ReplyTo(replyTo)
-	}
+	_ = msg.ReplyTo("postmaster@" + dom)
 	msg.Subject(subject)
 	msg.SetBodyString(mail.TypeTextPlain, textBody)
 	msg.AddAlternativeString(mail.TypeTextHTML, htmlBody)

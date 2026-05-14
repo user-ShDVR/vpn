@@ -89,7 +89,23 @@ func NewHandler(c Config) *Handler {
 }
 
 func (h *Handler) Register(app *fiber.App) {
-	app.Static("/static", h.staticPath)
+	// /static: 7-day immutable cache + on-the-fly gzip. Middleware runs
+	// before the Static handler and rewrites Cache-Control *after* the
+	// response is built — Fiber's MaxAge alone emits only `public, max-age=…`
+	// without the `immutable` directive that lets browsers skip revalidation.
+	app.Use("/static", func(c *fiber.Ctx) error {
+		if err := c.Next(); err != nil {
+			return err
+		}
+		c.Set("Cache-Control", "public, max-age=604800, immutable")
+		return nil
+	})
+	app.Static("/static", h.staticPath, fiber.Static{
+		Compress:      true,
+		ByteRange:     true,
+		MaxAge:        7 * 24 * 60 * 60,
+		CacheDuration: 24 * time.Hour,
+	})
 
 	app.Get("/", h.rootRedirect)
 	app.Get("/login", h.loginPage)
@@ -106,6 +122,10 @@ func (h *Handler) Register(app *fiber.App) {
 
 	app.Get("/privacy", h.privacyPage)
 	app.Get("/terms", h.termsPage)
+	// RFC 8058 One-Click: Gmail/Yandex POST here on user unsubscribe click.
+	// Must respond 200 within 2s. Public, idempotent.
+	app.Get("/unsubscribe", h.unsubscribeHandler)
+	app.Post("/unsubscribe", h.unsubscribeHandler)
 
 	// Platega redirect endpoints (no auth — Platega controls the URL the user lands on).
 	app.Get("/payment/platega/return", h.plategaReturn)
@@ -157,6 +177,29 @@ func (h *Handler) termsPage(c *fiber.Ctx) error {
 	return render(c, templates.Terms(templates.LegalData{
 		SupportEmail: h.supportEmail, UpdatedAt: "06.05.2026",
 	}))
+}
+
+// unsubscribeHandler honours RFC 8058 List-Unsubscribe / One-Click. Gmail and
+// Yandex POST here when a user clicks the inbox "Unsubscribe" link; we must
+// reply 200 quickly. Browser GET shows a confirmation page pointing to
+// /profile (where the user can disable notifications). All СвязьOK email is
+// transactional, so we don't track an "unsubscribed" flag — but acknowledge
+// politely to keep deliverability scoring happy.
+func (h *Handler) unsubscribeHandler(c *fiber.Ctx) error {
+	if c.Method() == fiber.MethodPost {
+		// One-Click POST from mail provider. No body parsing needed.
+		return c.SendString("OK")
+	}
+	c.Set("Content-Type", "text/html; charset=utf-8")
+	return c.SendString(`<!doctype html><meta charset="utf-8">
+<title>Отписка — СвязьOK</title>
+<body style="font-family:system-ui,sans-serif;background:#0a0f1a;color:#f9fafb;padding:48px;text-align:center">
+<div style="max-width:480px;margin:0 auto">
+<h1>Отписка получена</h1>
+<p>Письма от СвязьOK — только транзакционные (подтверждение email, восстановление пароля).
+Полностью отключить их нельзя, иначе вход в кабинет не работает.</p>
+<p style="margin-top:24px"><a href="/profile" style="color:#8689f0">Перейти в профиль</a></p>
+</div></body>`)
 }
 
 func (h *Handler) supportPage(c *fiber.Ctx) error {
