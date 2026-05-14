@@ -158,10 +158,13 @@ func domainOf(from string) string {
 
 // makeMessageID builds an RFC-5322 Message-ID anchored on our own domain
 // (Gmail/Yandex flag IDs ending in a docker container hex hostname).
+// makeMessageID returns the bare local-part@domain (no angle brackets).
+// go-mail's SetMessageIDWithValue wraps it in <...> itself — adding our own
+// pair produces `<<...>>` which trips SpamAssassin's INVALID_MSGID rule.
 func makeMessageID(domain string) string {
 	var rb [12]byte
 	_, _ = rand.Read(rb[:])
-	return fmt.Sprintf("<%d.%x@%s>", time.Now().UnixNano(), rb, domain)
+	return fmt.Sprintf("%d.%x@%s", time.Now().UnixNano(), rb, domain)
 }
 
 // stripTags is a poor-man's HTML→text fallback for the plain-text alt.
